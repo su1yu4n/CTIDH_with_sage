@@ -75,41 +75,90 @@ class TestPrimeField(unittest.TestCase):
         b += a
         self.assertEqual(b, 16)
         self.assertEqual(Fp1024.add_count, 2)
+
+    def test_sub(self):
+        Fp1024.reset_runtime()
+        a = Fp1024(16)
+        b = Fp1024(15)
+        self.assertEqual(Fp1024.add_count, 0)
+        c = a - b
+        self.assertEqual(c, 1)
+        self.assertEqual(Fp1024.add_count, 1)
+        a = a - b
+        self.assertEqual(a, 1)
+        self.assertEqual(Fp1024.add_count, 2)
+        a = a - 1
+        self.assertEqual(a, 0)
+        self.assertEqual(Fp1024.add_count, 3)
+
+    def test_rsub(self):
+        Fp1024.reset_runtime()
+        a = Fp1024(p1024)
+        b = Fp1024(p1024 - 2)
+        self.assertEqual(Fp1024.add_count, 0)
+        c = p1024 - b
+        self.assertEqual(Fp1024.add_count, 1)
+        self.assertEqual(c, 2)
+        d = 3 - a
+        self.assertEqual(Fp1024.add_count, 2)
+        self.assertEqual(d, 3)
+        e = 0 - b
+        self.assertEqual(Fp1024.add_count, 3)
+        self.assertEqual(e, 2)
+
+    def test_isub(self):
+        Fp2048.reset_runtime()
+        a = Fp2048(90)
+        b = Fp2048(42)
+        self.assertEqual(Fp2048.add_count, 0)
+        a -= 3
+        self.assertEqual(a, 87)
+        self.assertEqual(Fp2048.add_count, 1)
+        a -= b
+        self.assertEqual(a, 45)
+        self.assertEqual(Fp2048.add_count, 2)
+
+    def test_mul(self):
+        Fp2048.reset_runtime()
+        a = Fp2048(3)
+        b = Fp2048(7)
+        self.assertEqual(Fp2048.mul_count, 0)
+        c = a * b
+        self.assertEqual(c, 21)
+        self.assertEqual(Fp2048.mul_count, 1)
+        c = p2048 * c
+        self.assertEqual(c, 0)
+        self.assertEqual(Fp2048.mul_count, 2)
+        b = b * (p2048 - 1)
+        self.assertEqual(b, -7)
+        self.assertEqual(Fp2048.mul_count, 3)
+
+    def test_rmul(self):
+        Fp1024.reset_runtime()
+        a = Fp1024(p1024-1)
+        b = Fp1024(5)
+        self.assertEqual(Fp1024.mul_count, 0)
+        c = 8*a
+        self.assertEqual(c, -8)
+        self.assertEqual(Fp1024.mul_count, 1)
+        c = a*b
+        self.assertEqual(c, -5)
+        self.assertEqual(Fp1024.mul_count, 2)
+        c = a*(-b)
+        self.assertEqual(c, 5)
+        self.assertEqual(Fp1024.mul_count, 3)
+
+    def test_imul(self):
+        Fp1024.reset_runtime()
+        a = Fp1024(p1024-1)
+        b = Fp1024(5)
+        self.assertEqual(Fp1024.mul_count, 0)
+        a *= 3
+        self.assertEqual(a, -3)
+        self.assertEqual(Fp1024.mul_count, 1)
+        b *= a
+        self.assertEqual(b, -15)
+        self.assertEqual(Fp1024.mul_count, 2)
     
-    # TODO: Add more tests, such as sub rsub isub mul pow invert...
-
-
-
-# p = 31258613193250572484686795204590428045325278335756488509417380147989191591013695960523454229439943526174516836804526694803754791806514797454806413422135845959682240605147195662178033945501227284906138519332665421238173115419904786072611649808082328359399330601814276219358255285323504274244891804869091065552318327790140350673759394401692394790149771353631859923204704775535338816817699239207701424948322420803517506192052699284149495781764810879921006421214731560197045604172518737388974607923865313337968911439410704459583975801501147132536789055845508806054526511545228687644365106576314242096626345373821692886509
-# Fp = PrimeField(p)
-# Fp.reset_runtime()
-# a = Fp(3)
-# b = Fp(4)
-# Fp.show_runtime()
-# c = a + b
-# Fp.show_runtime()
-# c = c + 3
-# Fp.show_runtime()
-# c = 3 + c
-# Fp.show_runtime()
-# c += a
-# Fp.show_runtime()
-
-
-# Fp.reset_runtime()
-# a -= 5
-# Fp.show_runtime()
-# a = a-5
-# Fp.show_runtime()
-# a = 5-a
-# Fp.show_runtime()
-# a = -a
-
-
-# Fp.reset_runtime()
-# c = a*b
-# Fp.show_runtime()
-# c = a*3
-# Fp.show_runtime()
-# c = 3*a
-# Fp.show_runtime()
+    # TODO: Add tests of pow and invert after implement them
+    
