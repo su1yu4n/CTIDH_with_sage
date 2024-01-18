@@ -160,5 +160,31 @@ class TestPrimeField(unittest.TestCase):
         self.assertEqual(b, -15)
         self.assertEqual(Fp1024.mul_count, 2)
     
+    def test_pow(self):
+        Fp2048.reset_runtime()
+        a = Fp2048(p2048-2)
+        b = 8
+        c = 7
+        d = 233
+        self.assertEqual(Fp2048.mul_count, 0)
+        
+        e = a**8  # a -> a^2 -> a^4 -> a^8
+        self.assertEqual(e, 256)
+        self.assertEqual(Fp2048.mul_count, 0)
+        self.assertEqual(Fp2048.sqr_count, 3)
+        self.assertEqual(Fp2048.pow_count, 1)
+        Fp2048.reset_runtime()
+
+        e = a**c
+        self.assertEqual(Fp2048.mul_count, 2)
+        self.assertEqual(Fp2048.sqr_count, 2)
+        self.assertEqual(Fp2048.pow_count, 2)
+        
+    def test_ipow(self):
+        pass
+
+    def test_invert(self):
+        pass
+
     # TODO: Add tests of pow and invert after implement them
     

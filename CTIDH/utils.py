@@ -24,3 +24,11 @@ def read_prime_info(prime_name='p2048_CTIDH'):
 # Dictionary which provides attribute access to its keys.
 class attrdict(dict):
     __getattr__ = dict.__getitem__
+
+
+# number of bits, use builtin int.bit_length if present:
+bitlength = getattr(int, 'bit_length', lambda x: len(bin(x)[2:]))
+
+# python3.10 has builtin popcount aka hamming weight aka int.bit_count:
+hamming_weight = getattr(int, 'bit_count', lambda x: bin(x).count(r'1'))
+# hamming weight: number of bits equal 1
