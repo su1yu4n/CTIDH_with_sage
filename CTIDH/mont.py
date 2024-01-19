@@ -1,9 +1,11 @@
-from primefield import PrimeField
-from utils import read_prime_info, attrdict
+from random import randint
+
+from .primefield import PrimeField
+from .utils import read_prime_info, attrdict, CMOV, CSWAP
 
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
-def MontgomeryCurve(prime_name="p2048_CTIDH", SDAC=False, validation_algo="origin"):
+def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origin"):
     if validation_algo not in ["origin", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
@@ -29,9 +31,59 @@ def MontgomeryCurve(prime_name="p2048_CTIDH", SDAC=False, validation_algo="origi
         """
         return x[0] + SQR * x[1] + ADD * x[2]
 
-    def elligator(A):
-        # TODO elligator
-        raise NotImplementedError
+    # TODO: Debug T- point
+    def elligator(A: tuple):
+        """Elligator 1 from CTIDH original implementation
+
+        Args:
+            A (tuple): tuple of ZModPrime class objects (Ax, Az), represent
+              A = Ax / Az , or (Ax: Az) in P^1
+
+        Returns:
+            T+, T-:  projective x-coordinates of random points on EA(Fp) and EA(Fp^2) respectively.
+            T- is the proj x-coord of point (x, iy) correspond to EA^t(Fp)'s point (-x, y)) .
+                Each of them is a tuple like (Tx, Tz), and Tx, Tz are ZModPrime class object
+        """
+        Ax, Az = A
+        # Check if Ax and Az are ZModPrime objects
+        if not hasattr(Ax, 'value') or not hasattr(Az, 'value'):
+            raise TypeError('Input must be ZModPrime type tuple!') 
+        
+        while True:
+            one = field(1)
+            
+            # TODO: We can change to a nice random generator
+            u = field.get_random() # line 1 of my pseudocode 
+            if u == 0:
+                continue
+            u2 = u ** 2
+            D = u2 - 1
+            if D == 0:
+                continue # line 7 of my pseudocode 
+
+            M = u2 * Ax
+            T = M * Ax
+            ctrl = (Ax == 0)
+            P = Ax 
+            P = CMOV(P, one, ctrl) # line 12 of my pseudocode 
+            M = CMOV(M, one, ctrl)
+            T = CMOV(T, one, ctrl)
+            D = D * Az
+            D2 = D ** 2
+            T = T + D2
+            T = T * D
+            T = T * P # line 19 of my pseudocode 
+            
+            Tplus_x = P
+            Tminus_x = -M
+            ctrl = not T.is_square()
+            Tplus_x, Tminus_x = CSWAP(Tplus_x, Tminus_x, ctrl)
+
+            Tplus_z = D
+            Tminus_z = D
+            
+            return (Tplus_x, Tplus_z), (Tminus_x, Tminus_z)
+
 
     def affine_to_projective(affine):
         """
@@ -130,7 +182,8 @@ def MontgomeryCurve(prime_name="p2048_CTIDH", SDAC=False, validation_algo="origi
         V1 **= 2
         V2 = XP - ZP
         V2 **= V2
-
+        
+        # TODO: complete this function
         raise NotImplementedError
 
     def xadd(P, Q, P_minus_Q):

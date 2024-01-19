@@ -1,6 +1,6 @@
 from sage.all import GF, proof, is_prime
 from sage.rings.finite_rings.integer_mod import IntegerMod_gmp, IntegerMod_int
-from utils import bitlength, hamming_weight
+from .utils import bitlength, hamming_weight
 
 proof.arithmetic(False)
 
@@ -13,8 +13,8 @@ def PrimeField(p: int):
 
     # other can have type ZModPrime or int
     def get_value(other):
-        if isinstance(other, ZModPrime):
-            return other.x
+        if hasattr(other, "value"):
+            return other.value
         elif isinstance(other, int):
             return other
         else:
@@ -22,38 +22,42 @@ def PrimeField(p: int):
                 "Cannot get the value of (type:{}) {}!".format(type(other), other)
             )
 
-    # TODO: Maybe rewrite get_value and operators with this decorator. Just for touching fish ×
+    # TODO: Maybe rewrite get_value and operators with this decorator.
     # def check_other_type_and_return(f):
     #   def wrapper(x, other):
     #       if isinstance(other, ZModPrime):
-    #           return f(x.x, other.x)
+    #           return f(x.value, other.value)
     #       elif isinstance(other, int):
-    #           return f(x.x, other)
+    #           return f(x.value, other)
     #   return wrapper
 
     class ZModPrime:
         add_count = 0
         sqr_count = 0
         mul_count = 0
+
+        # Note that computing a^0, a^1, a^2 won't increase pow_count
+        # And reset_runtime() won't change pow_count and inv_count
         pow_count = 0
         inv_count = 0
-        p = p
+        _p = p
+        # p = p
 
         # self.x always has the type IntegerMod_gmp when p is large or IntegerMod_int
-        def __init__(self, x):
-            if isinstance(x, IntegerMod_gmp) or isinstance(x, IntegerMod_int):
-                self.x = x
-            elif isinstance(x, int):
-                self.x = GFp(x)
+        def __init__(self, value):
+            if isinstance(value, IntegerMod_gmp) or isinstance(value, IntegerMod_int):
+                self.value = value
+            elif isinstance(value, int):
+                self.value = GFp(value)
             else:
                 raise TypeError(
-                    "Cannot convert {} type {} to a ZModPrime!".format(type(x), x)
+                    "Cannot convert {} type {} to a ZModPrime!".format(type(value), value)
                 )
 
         def __add__(self, other):
             ZModPrime.add_count += 1
             other = get_value(other)
-            return ZModPrime(self.x + other)
+            return ZModPrime(self.value + other)
 
         def __radd__(self, other):
             return self + other
@@ -61,13 +65,13 @@ def PrimeField(p: int):
         def __iadd__(self, other):
             ZModPrime.add_count += 1
             other = get_value(other)
-            self.x = self.x + other
+            self.value = self.value + other
             return self
 
         def __sub__(self, other):
             ZModPrime.add_count += 1
             other = get_value(other)
-            return ZModPrime(self.x - other)
+            return ZModPrime(self.value - other)
 
         def __rsub__(self, other):
             return -self + other
@@ -75,13 +79,13 @@ def PrimeField(p: int):
         def __isub__(self, other):
             ZModPrime.add_count += 1
             other = get_value(other)
-            self.x -= other
+            self.value -= other
             return self
 
         def __mul__(self, other):
             ZModPrime.mul_count += 1
             other = get_value(other)
-            return ZModPrime(self.x * other)
+            return ZModPrime(self.value * other)
 
         def __rmul__(self, other):
             return self * other
@@ -89,7 +93,7 @@ def PrimeField(p: int):
         def __imul__(self, other):
             ZModPrime.mul_count += 1
             other = get_value(other)
-            self.x = self.x * other
+            self.value = self.value * other
             return self
 
         # TODO: Maybe implment div rdiv and idiv?
@@ -132,7 +136,9 @@ def PrimeField(p: int):
             elif e > 0: # e > 0
                 ZModPrime.sqr_count += bitlength(e) - 1
                 ZModPrime.mul_count += hamming_weight(e) - 1
-                return ZModPrime(self.x ** e)
+                if e > 2: # e > 2
+                    ZModPrime.pow_count += 1
+                return ZModPrime(self.value ** e)
 
             # Seems that this is the only case when e<0 in CSIDH.
             elif e == -1:
@@ -150,12 +156,13 @@ def PrimeField(p: int):
                 # by special-casing that here we can avoid
                 # ~300k function calls per CSIDH:
                 if e > 2:
+                    ZModPrime.pow_count += 1
                     ZModPrime.mul_count += hamming_weight(e) - 1
-                self.x **= e
+                self.value **= e
                 return self
             
             elif e == 0:  # e == 0
-                self.x = 1
+                self.value = 1
                 return self
             
             else: # e < 0
@@ -164,25 +171,43 @@ def PrimeField(p: int):
         def __invert__(self):
             # TODO: write a faster constant-time invert.
             # Currently we use self.x**(p-2).
-            return self ** (ZModPrime.p - 2)
+            return self ** (ZModPrime._p - 2)
 
         def __neg__(self):
-            return ZModPrime(-self.x)
+            return ZModPrime(-self.value)
 
         def __eq__(self, other):
             other = get_value(other)
-            return self.x == other
+            return self.value == other
+        
+        def __repr__(self):
+            return str(self.value)
 
         def copy(self):
             ret = object.__new__(ZModPrime)
-            ret.x = self.x
+            ret.value = self.value
             return ret
+
+        def is_square(self) -> bool:
+            legendre_symbol = self ** ( (ZModPrime._p - 1) // 2)
+            return True if legendre_symbol == 1 else False
+
+        @classmethod
+        def get_random(cls):
+            return ZModPrime(GFp.random_element())
+
+
 
         @classmethod
         def reset_runtime(cls):
             cls.add_count = 0
             cls.sqr_count = 0
             cls.mul_count = 0
+
+        @classmethod
+        def reset_power_invert_time(cls):
+            cls.pow_count = 0
+            cls.inv_count = 0
 
         @classmethod
         def show_runtime(cls, label: str):

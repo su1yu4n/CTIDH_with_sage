@@ -1,8 +1,11 @@
 import unittest
 import json
 
+from sage.all import kronecker_symbol, proof
+
 from CTIDH import PrimeField
 
+proof.arithmetic(False)
 
 with open("parameters/p1024_CTIDH", "r") as f:
     p1024_info = json.load(f)
@@ -18,9 +21,9 @@ Fp2048 = PrimeField(p2048)
 class TestPrimeField(unittest.TestCase):
     def test_init(self):
         a = Fp1024(3)
-        self.assertEqual(a.x, 3)
+        self.assertEqual(a.value, 3)
         b = Fp1024(p1024)
-        self.assertEqual(b.x, 0)
+        self.assertEqual(b.value, 0)
 
     def test_eq(self):
         a = Fp1024(3)
@@ -162,23 +165,35 @@ class TestPrimeField(unittest.TestCase):
     
     def test_pow(self):
         Fp2048.reset_runtime()
+        Fp2048.reset_power_invert_time()
         a = Fp2048(p2048-2)
         b = 8
         c = 7
         d = 233
         self.assertEqual(Fp2048.mul_count, 0)
+        self.assertEqual(Fp2048.sqr_count, 0)
+        self.assertEqual(Fp2048.pow_count, 0)
+
         
         e = a**8  # a -> a^2 -> a^4 -> a^8
         self.assertEqual(e, 256)
         self.assertEqual(Fp2048.mul_count, 0)
         self.assertEqual(Fp2048.sqr_count, 3)
         self.assertEqual(Fp2048.pow_count, 1)
-        Fp2048.reset_runtime()
+        Fp2048.reset_runtime() 
 
         e = a**c
         self.assertEqual(Fp2048.mul_count, 2)
         self.assertEqual(Fp2048.sqr_count, 2)
+        # reset_runtime won't change pow_count
         self.assertEqual(Fp2048.pow_count, 2)
+        Fp2048.reset_runtime() 
+
+        e = a**2
+        self.assertEqual(Fp2048.mul_count, 0)
+        self.assertEqual(Fp2048.sqr_count, 1)
+        self.assertEqual(Fp2048.pow_count, 2) # a^2 is not considered as a power, because it only need a square
+
         
     def test_ipow(self):
         pass
@@ -186,5 +201,19 @@ class TestPrimeField(unittest.TestCase):
     def test_invert(self):
         pass
 
-    # TODO: Add tests of pow and invert after implement them
-    
+    def test_random(self):
+        for _ in range(100):
+            a = Fp1024.get_random()
+            b = Fp1024.get_random()
+            self.assertNotEqual(a, b)
+
+    # num_of_test used to be 10**4, and have passed the test several times.
+    # Change to 10**3 to make the test faster
+    def test_is_square(self, num_of_test = 10**3):
+        for _ in range(num_of_test):
+            a = Fp2048.get_random()
+            self.assertEqual(a.is_square(), kronecker_symbol(a.value, p2048) == 1)
+
+        for _ in range(num_of_test):
+            a = Fp1024.get_random()
+            self.assertEqual(a.is_square(), kronecker_symbol(a.value, p1024) == 1)
