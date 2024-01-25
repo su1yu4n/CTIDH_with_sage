@@ -1,10 +1,12 @@
 from sage.all import GF, proof, is_prime
 from sage.rings.finite_rings.integer_mod import IntegerMod_gmp, IntegerMod_int
-from .utils import bitlength, hamming_weight
+
+from .utils import bitlength, hamming_weight, memoize
 
 proof.arithmetic(False)
 
 
+@memoize
 def PrimeField(p: int):
     if not is_prime(p):
         raise ArithmeticError("Cannot construct Fp: p is not a prime!")
@@ -13,7 +15,7 @@ def PrimeField(p: int):
 
     # other can have type ZModPrime or int
     def get_value(other):
-        if hasattr(other, "value"):
+        if isinstance(other, ZModPrime):
             return other.value
         elif isinstance(other, int):
             return other
@@ -43,16 +45,20 @@ def PrimeField(p: int):
         _p = p
         # p = p
 
-        # self.x always has the type IntegerMod_gmp when p is large or IntegerMod_int
-        def __init__(self, value):
-            if isinstance(value, IntegerMod_gmp) or isinstance(value, IntegerMod_int):
-                self.value = value
-            elif isinstance(value, int):
-                self.value = GFp(value)
+        # self.value always has the type IntegerMod_gmp when p is large or IntegerMod_int
+        def __init__(self, elem):
+            if isinstance(elem, IntegerMod_gmp) or isinstance(elem, IntegerMod_int):
+                self.value = elem
+            elif isinstance(elem, ZModPrime):
+                self.value = elem.value
+            elif isinstance(elem, int):
+                self.value = GFp(elem)
             else:
                 raise TypeError(
-                    "Cannot convert {} type {} to a ZModPrime!".format(type(value), value)
+                    "Cannot convert {} type {} to a ZModPrime!".format(type(elem), elem)
                 )
+
+            self._repr = 'ZModPrime {} mod {}'.format(elem, p)
 
         def __add__(self, other):
             ZModPrime.add_count += 1
@@ -181,7 +187,10 @@ def PrimeField(p: int):
             return self.value == other
         
         def __repr__(self):
-            return str(self.value)
+            return self._repr
+
+        def get_int_value(self):
+            return int(self.value)
 
         def copy(self):
             ret = object.__new__(ZModPrime)
@@ -195,7 +204,6 @@ def PrimeField(p: int):
         @classmethod
         def get_random(cls):
             return ZModPrime(GFp.random_element())
-
 
 
         @classmethod
@@ -214,14 +222,16 @@ def PrimeField(p: int):
             print(
                 "| %s: %7dM + %7dS + %7da"
                 % (label, cls.mul_count, cls.sqr_count, cls.add_count),
-                end="\t",
+                end="\n",
             )
 
         @classmethod
         def show_sqr_pow(cls, label: str):
             print(
                 "| %s: %2dP + %2dI" % (label, cls.pow_count, cls.inv_count),
-                end="\t",
+                end="\n",
             )
+
+    ZModPrime.__name__ = f'ZModPrime with p = {p}'
 
     return ZModPrime

@@ -26,6 +26,23 @@ class attrdict(dict):
     __getattr__ = dict.__getitem__
 
 
+# memoize calls to the class constructors for fields
+# this helps typechecking by never creating two separate
+# instances of a number class.
+def memoize(f):
+   cache = {}
+
+   def memoizedFunction(*args, **kwargs):
+      argTuple = args + tuple(kwargs)
+      if argTuple not in cache:
+         cache[argTuple] = f(*args, **kwargs)
+      return cache[argTuple]
+
+   memoizedFunction.cache = cache
+   return memoizedFunction
+
+
+
 # number of bits, use builtin int.bit_length if present:
 bitlength = getattr(int, 'bit_length', lambda x: len(bin(x)[2:]))
 

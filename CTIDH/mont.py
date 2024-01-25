@@ -1,12 +1,15 @@
 from random import randint
 
 from .primefield import PrimeField
-from .utils import read_prime_info, attrdict, CMOV, CSWAP
+from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize
 
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
-def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origin"):
-    if validation_algo not in ["origin", "doliskani", "pairing1", "pairing2"]:
+
+
+@memoize
+def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
+    if validation not in ["origin", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
     prime_info = read_prime_info(prime_name)
@@ -18,6 +21,9 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
     p = prime_info["p"]
 
     field = PrimeField(p)
+
+    type_field = type(field(2))
+
 
     # TODO: read SDAC info
 
@@ -31,49 +37,54 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         """
         return x[0] + SQR * x[1] + ADD * x[2]
 
-    # TODO: Debug T- point
     def elligator(A: tuple):
-        """Elligator 1 from CTIDH original implementation
+        """Elligator from CTIDH original implementation (NOT Elligator 2)
 
         Args:
             A (tuple): tuple of ZModPrime class objects (Ax, Az), represent
               A = Ax / Az , or (Ax: Az) in P^1
 
         Returns:
-            T+, T-:  projective x-coordinates of random points on EA(Fp) and EA(Fp^2) respectively.
+            T+, T- (tuple):  projective x-coordinates of random points on EA(Fp) and EA(Fp^2) respectively.
             T- is the proj x-coord of point (x, iy) correspond to EA^t(Fp)'s point (-x, y)) .
                 Each of them is a tuple like (Tx, Tz), and Tx, Tz are ZModPrime class object
         """
         Ax, Az = A
+
         # Check if Ax and Az are ZModPrime objects
-        if not hasattr(Ax, 'value') or not hasattr(Az, 'value'):
-            raise TypeError('Input must be ZModPrime type tuple!') 
-        
+        # Can't write isinstance(Ax, ZModPrime) here because my ZModPrime is inside the func PrimeField().
+        # This can cause some invisible bugs with sage's GF element
+        # if not hasattr(Ax, "value") or not hasattr(Az, "value"):
+
+        # Now change to
+        if not isinstance(Ax, type_field) or not isinstance(Az, type_field):
+            raise TypeError("Input must be ZModPrime type tuple!")
+
         while True:
             one = field(1)
-            
-            # TODO: We can change to a nice random generator
-            u = field.get_random() # line 1 of my pseudocode 
+
+            # TODO: Change to a nice random generator
+            u = field.get_random()  # line 1 of my pseudocode
             if u == 0:
                 continue
-            u2 = u ** 2
+            u2 = u**2
             D = u2 - 1
             if D == 0:
-                continue # line 7 of my pseudocode 
+                continue  # line 7 of my pseudocode
 
             M = u2 * Ax
             T = M * Ax
-            ctrl = (Ax == 0)
-            P = Ax 
-            P = CMOV(P, one, ctrl) # line 12 of my pseudocode 
+            ctrl = Ax == 0
+            P = Ax
+            P = CMOV(P, one, ctrl)  # line 12 of my pseudocode
             M = CMOV(M, one, ctrl)
             T = CMOV(T, one, ctrl)
             D = D * Az
-            D2 = D ** 2
+            D2 = D**2
             T = T + D2
             T = T * D
-            T = T * P # line 19 of my pseudocode 
-            
+            T = T * P  # line 19 of my pseudocode
+
             Tplus_x = P
             Tminus_x = -M
             ctrl = not T.is_square()
@@ -81,20 +92,19 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
 
             Tplus_z = D
             Tminus_z = D
-            
+
             return (Tplus_x, Tplus_z), (Tminus_x, Tminus_z)
 
-
-    def affine_to_projective(affine):
+    def affine_to_projective(affine) -> tuple:
         """
         affine_to_projective()
         input : the affine Montgomery coefficient A=A'/C with C=1
         output: projective Montgomery constants A24 := A' + 2C and C24 := 4C
                 where E : y^2 = x^3 + (A'/C)*x^2 + x
         """
-        return [affine + field(2), field(4)]
+        return (affine + field(2), field(4))
 
-    def coeff(A):
+    def coeff(A: tuple):
         """
         ----------------------------------------------------------------------
         coeff()
@@ -103,16 +113,17 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         output: the affine Montgomery coefficient A/C
         ----------------------------------------------------------------------
         """
-        output = A[0] + A[0]  # (2 * A24)
-        output -= A[1]  # (2 * A24) - C24
-        C24_inv = A[1] ** -1  # 1 / (C24)
+        A24, C24 = A
+        output = A24 + A24  # (2 * A24)
+        output -= C24  # (2 * A24) - C24
+        C24_inv = C24 ** (-1)  # 1 / (C24)
         output += output  # 4*A = 2[(2 * A24) - C24]
         output *= C24_inv  # A/C = 2[(2 * A24) - C24] / C24
 
         return output
 
     # TODO: Check if this is the same as CTIDH
-    def get_A(P, Q, PQ):
+    def get_A24(P: tuple, Q: tuple, PQ: tuple) -> tuple:
         """
         ----------------------------------------------------------------------
         coeff()
@@ -122,31 +133,34 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         output: the projective Montgomery coefficient (A + 2C : 4C)
         ----------------------------------------------------------------------
         """
-        t0 = P[0] + P[1]  # XP + ZP
-        t1 = Q[0] + Q[1]  # XQ + ZQ
+
+        XP, ZP = P; XQ, ZQ = Q; XPQ, ZPQ = PQ
+
+        t0 =XP +ZP  # XP + ZP
+        t1 = XQ + ZQ  # XQ + ZQ
 
         t = t0 * t1  # (XP + ZP) * (XQ + ZQ)
-        XPXQ = P[0] * Q[0]  # XP * XQ
-        ZPZQ = P[1] * Q[1]  # ZP * ZQ
+        XPXQ =XP * XQ  # XP * XQ
+        ZPZQ = ZP * ZQ  # ZP * ZQ
 
         t -= XPXQ
         t -= ZPZQ  # XPZQ + ZPXQ
         s = XPXQ - ZPZQ  # XPXQ - ZPZQ
 
-        t0 = t * PQ[0]  # (XPZQ + ZPXQ) * XPQ
-        t1 = s * PQ[1]  # (XPXQ - ZPZQ) * ZPQ
+        t0 = t * XPQ  # (XPZQ + ZPXQ) * XPQ
+        t1 = s * ZPQ  # (XPXQ - ZPZQ) * ZPQ
         t0 += t1  # (XPZQ + ZPXQ) * XPQ + (XPXQ - ZPZQ) * ZPQ
         t0 **= 2  # [(XPZQ + ZPXQ) * XPQ + (XPXQ - ZPZQ) * ZPQ] ^ 2
 
-        t1 = t * PQ[1]  # (XPZQ + ZPXQ) * ZPQ
-        s = ZPZQ * PQ[0]  # ZPZQ * XPQ
+        t1 = t * ZPQ  # (XPZQ + ZPXQ) * ZPQ
+        s = ZPZQ * XPQ  # ZPZQ * XPQ
         t1 += s  # (XPZQ + ZPXQ) * ZPQ + ZPZQ * XPQ
-        s = XPXQ * PQ[0]  # (XPXQ) * XPQ
+        s = XPXQ * XPQ  # (XPXQ) * XPQ
         s += s  # 2 * [(XPXQ) * XPQ]
         s += s  # 4 * [(XPXQ) * XPQ]
         t1 *= s  # [(XPZQ + ZPXQ) * ZPQ + ZPZQ * XPQ] * (4 * [(XPXQ) * XPQ])
 
-        t = ZPZQ * PQ[1]  # ZPZQ * ZPQ
+        t = ZPZQ * ZPQ  # ZPZQ * ZPQ
 
         XPXQ = (
             t0 - t1
@@ -157,7 +171,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         B1 = ZPZQ + ZPZQ  # 2C
         B0 = XPXQ + B1  # A + 2C
         B1 += B1  # 4C
-        return [B0, B1]
+        return (B0, B1)
 
     def isinfinity(P):
         """isinfinity(P) determines if x(P) := (XP : ZP) = (1 : 0)"""
@@ -167,7 +181,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         """isequal(P, Q) determines if x(P) = x(Q)"""
         return (P[0] * Q[1]) == (P[1] * Q[0])
 
-    def xdbl(P, A):
+    def xdbl(P: tuple, A24: tuple) -> tuple:
         """
         ----------------------------------------------------------------------
         xdbl()
@@ -177,16 +191,22 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         output: the projective Montgomery x-coordinate point x([2]P)
         ----------------------------------------------------------------------
         """
-        XP, ZP = P[0], P[1]
-        V1 = XP + ZP
+        XP, ZP = P
+
+        V1 = XP + ZP  # line 1 of my pseudo code
         V1 **= 2
         V2 = XP - ZP
-        V2 **= V2
-        
-        # TODO: complete this function
-        raise NotImplementedError
+        V2 **= 2
+        Z2P = A24[1] * V2
+        X2P = Z2P * V1  # line 6 of my pseudo code
 
-    def xadd(P, Q, P_minus_Q):
+        V1 -= V2
+        Z2P += A24[0] * V1
+        Z2P *= V1
+
+        return (X2P, Z2P)
+
+    def xadd(P: tuple, Q: tuple, PQ: tuple):
         """
         ----------------------------------------------------------------------
         xadd()
@@ -195,9 +215,9 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         output: the projective Montgomery x-coordinate point x(P+Q)
         ----------------------------------------------------------------------
         """
-        XP, ZP = P[0], P[1]
-        XQ, ZQ = Q[0], Q[1]
-        X_minus, Z_minus = P_minus_Q[0], P_minus_Q[1]
+        XP, ZP = P
+        XQ, ZQ = Q
+        XPQ, ZPQ = PQ
 
         V0 = XP + ZP
         V1 = XQ - ZQ
@@ -206,16 +226,16 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         V2 = XQ + ZQ
         V2 = V2 * V0
         V3 = V1 + V2
-        
-        V3 **= 2  
+
+        V3 **= 2
         V4 = V1 - V2
         V4 **= 2
-        X_plus = Z_minus * V3 
-        Z_plus = X_minus * V4
+        X_plus = ZPQ * V3
+        Z_plus = XPQ * V4
 
         return [X_plus, Z_plus]
 
-    def xmul_Ladder(P, A, j):
+    def xmul_Ladder(P: tuple, A24: tuple, j) -> tuple:
         """
         ----------------------------------------------------------------------
         xmul_Ladder():  Constant-time Montgomery Ladder
@@ -227,7 +247,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
         """
         raise NotImplementedError
 
-    def xmul_SDAC(P, n, A):
+    def xmul_SDAC(P: tuple, n, A24: tuple) -> tuple:
         """
         ----------------------------------------------------------------------
         xmul(): scalar mult that use Shortest Differential Addition Chain (SDAC)
@@ -244,25 +264,26 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation_algo="origi
     # TODO: Add more useful things such as PRAC, eucild2d, cofactor_multiples, crisscross...
     # Read papers and see sibc...
 
-    def issupersingular_origin(A):
+    # TODO: Decide whether these verification algorithms should use A24 or affine A
+    def issupersingular_origin(A: tuple):
         raise NotImplementedError
 
-    def issupersingular_doliskani(A):
+    def issupersingular_doliskani(A: tuple):
         raise NotImplementedError
 
-    def issupersingular_pairing1(A):
+    def issupersingular_pairing1(A: tuple):
         raise NotImplementedError
 
-    def issupersingular_pairing2(A):
+    def issupersingular_pairing2(A: tuple):
         raise NotImplementedError
 
-    validation_algo_options = {
+    validation_options = {
         "origin": issupersingular_origin,
         "doliskani": issupersingular_doliskani,
         "pairing1": issupersingular_pairing1,
         "pairing2": issupersingular_pairing2,
     }
 
-    issupersingular = validation_algo_options[validation_algo]
+    issupersingular = validation_options[validation]
 
     return attrdict(**locals())

@@ -196,9 +196,11 @@ class TestPrimeField(unittest.TestCase):
 
         
     def test_ipow(self):
+        #TODO
         pass
 
     def test_invert(self):
+        #TODO
         pass
 
     def test_random(self):
