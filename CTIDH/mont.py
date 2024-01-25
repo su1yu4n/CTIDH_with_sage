@@ -1,5 +1,3 @@
-from random import randint
-
 from .primefield import PrimeField
 from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize
 

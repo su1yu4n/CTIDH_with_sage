@@ -102,7 +102,7 @@ class TestMontgomeryCurve(unittest.TestCase):
                 T0, T1 = MontCurve.elligator(A)
                 T0_x = get_affine_from_projective(T0)
 
-                A24 = [A[0] + 2*A[1], 4*A[1]]
+                A24 = (A[0] + 2*A[1], 4*A[1])
                 two_T0 = MontCurve.xdbl(T0, A24)
                 two_T0_x = get_affine_from_projective(two_T0)
 
@@ -116,6 +116,39 @@ class TestMontgomeryCurve(unittest.TestCase):
                 a = field.get_random()
                 test_one_curve(a)
 
+    def test_xadd(self, num_of_test=500):
+        for field, sage_Fp, MontCurve, prime_name in [
+            (Fp1024, sage_GFp1024, MontCurve_p1024, 'p1024_CTIDH'), 
+            (Fp2048, sage_GFp2048 ,MontCurve_p2048, 'p2048_CTIDH')
+        ]:
+            
+            field.reset_runtime(); field.reset_power_invert_time()
 
+            def test_one_curve(a=field(0), num_point=10):
+                A = (a, field(1)) 
+                sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
+                
+                P, _ = MontCurve.elligator(A)
+                Q, _ = MontCurve.elligator(A)
+
+                Px = get_affine_from_projective(P)
+                Qx = get_affine_from_projective(Q)
+               
+                P_sage = sage_EC.lift_x(sage_Fp(Px))
+                Q_sage = sage_EC.lift_x(sage_Fp(Qx))
+                P_minus_Q_sage = P_sage - Q_sage
+                P_minus_Q = (field(P_minus_Q_sage[0]), field(P_minus_Q_sage[2]))
+                
+                P_plus_Q = MontCurve.xadd(P, Q, P_minus_Q)
+                P_plus_Qx = get_affine_from_projective(P_plus_Q)
+
+                P_plus_Q_sage = P_sage + Q_sage
+                self.assertEqual(P_plus_Qx, P_plus_Q_sage[0])
+            
+            test_one_curve(a=field(0), num_point=100)
+            
+            for _ in range(num_of_test - 1):
+                a = field.get_random()
+                test_one_curve(a)
 
             
