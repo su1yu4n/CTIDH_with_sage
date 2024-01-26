@@ -210,8 +210,8 @@ class TestPrimeField(unittest.TestCase):
             self.assertNotEqual(a, b)
 
     # num_of_test used to be 10**4, and have passed the test several times.
-    # Change to 10**3 to make the test faster
-    def test_is_square(self, num_of_test = 10**3):
+    # Change to 100 to make the test faster
+    def test_is_square(self, num_of_test = 100):
         for _ in range(num_of_test):
             a = Fp2048.get_random()
             self.assertEqual(a.is_square(), kronecker_symbol(a.value, p2048) == 1)

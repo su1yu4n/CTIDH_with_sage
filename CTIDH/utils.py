@@ -1,7 +1,7 @@
 import json
 
 
-def read_prime_info(prime_name='p2048_CTIDH'):
+def read_prime_info(prime_name="p2048_CTIDH"):
     """_summary_
 
     Args:
@@ -17,7 +17,7 @@ def read_prime_info(prime_name='p2048_CTIDH'):
         'p': value of p. p = 2**k * L[0] * ... * L[n-1] - 1
     }
     """
-    with open(f'parameters/{prime_name}') as f:
+    with open(f"parameters/{prime_name}") as f:
         return json.load(f)
 
 
@@ -30,36 +30,46 @@ class attrdict(dict):
 # this helps typechecking by never creating two separate
 # instances of a number class.
 def memoize(f):
-   cache = {}
+    cache = {}
 
-   def memoizedFunction(*args, **kwargs):
-      argTuple = args + tuple(kwargs)
-      if argTuple not in cache:
-         cache[argTuple] = f(*args, **kwargs)
-      return cache[argTuple]
+    def memoizedFunction(*args, **kwargs):
+        argTuple = args + tuple(kwargs)
+        if argTuple not in cache:
+            cache[argTuple] = f(*args, **kwargs)
+        return cache[argTuple]
 
-   memoizedFunction.cache = cache
-   return memoizedFunction
-
+    memoizedFunction.cache = cache
+    return memoizedFunction
 
 
 # number of bits, use builtin int.bit_length if present:
-bitlength = getattr(int, 'bit_length', lambda x: len(bin(x)[2:]))
+bitlength = getattr(int, "bit_length", lambda x: len(bin(x)[2:]))
 
 # python3.10 has builtin popcount aka hamming weight aka int.bit_count:
-hamming_weight = getattr(int, 'bit_count', lambda x: bin(x).count(r'1'))
+hamming_weight = getattr(int, "bit_count", lambda x: bin(x).count(r"1"))
 # hamming weight: number of bits equal 1
+
+
+# Return k0, k1, ..., kn
+def binrep(k: int) -> list:
+    bin_rep = []
+    for _ in range(k.bit_length()):
+        bin_rep.append(k & 1)
+        k = k >> 1
+    return bin_rep
 
 
 # conditional MOV, return a
 # Note that this PoC implementation does not implement CMOV and CSWAP carefully,
 # Maybe it should be implement in another way to make sure it safe.
 
-def CMOV(a, b, control:bool):
+
+def CMOV(a, b, control: bool):
     a = b if control else a
     return a
 
-def CSWAP(a, b, control:bool):
+
+def CSWAP(a, b, control: bool):
     if control:
         a, b = b, a
     return a, b

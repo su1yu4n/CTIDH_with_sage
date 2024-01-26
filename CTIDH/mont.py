@@ -1,5 +1,5 @@
 from .primefield import PrimeField
-from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize
+from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, bitlength
 
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
@@ -190,6 +190,8 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         ----------------------------------------------------------------------
         """
         XP, ZP = P
+        #TODO: Remove this unnecessary assert
+        assert XP != 0 and ZP != 0
 
         V1 = XP + ZP  # line 1 of my pseudo code
         V1 **= 2
@@ -204,7 +206,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
 
         return (X2P, Z2P)
 
-    def xadd(P: tuple, Q: tuple, PQ: tuple):
+    def xadd(P: tuple, Q: tuple, PQ: tuple) -> tuple:
         """
         ----------------------------------------------------------------------
         xadd()
@@ -216,6 +218,8 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         XP, ZP = P
         XQ, ZQ = Q
         XPQ, ZPQ = PQ
+        #TODO: Remove this unnecessary assert
+        assert XPQ != 0 and ZPQ != 0
 
         V0 = XP + ZP
         V1 = XQ - ZQ
@@ -231,7 +235,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         X_plus = ZPQ * V3
         Z_plus = XPQ * V4
 
-        return [X_plus, Z_plus]
+        return (X_plus, Z_plus)
 
     def xmul_Ladder(P: tuple, A24: tuple, j) -> tuple:
         """
@@ -243,7 +247,20 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         output: the projective Montgomery x-coordinate point x([L[j]]P)
         ----------------------------------------------------------------------
         """
-        raise NotImplementedError
+        XP, ZP = P
+        #TODO: Remove this unnecessary assert
+        assert XP != 0 and ZP != 0
+        kbits = binrep(L[j])
+        kbitlen = len(kbits)
+
+        x0, x1 = xdbl(P, A24), P
+        for i in reversed(range(kbitlen-1)):
+            x0, x1 = CSWAP(x0, x1, kbits[i+1] ^ kbits[i])
+            x0, x1 = xdbl(x0, A24), xadd(x0, x1, P)
+        x0, x1 = CSWAP(x0, x1, kbits[0])
+        
+        return x0
+
 
     def xmul_SDAC(P: tuple, n, A24: tuple) -> tuple:
         """
