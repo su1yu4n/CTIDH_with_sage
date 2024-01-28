@@ -1,11 +1,11 @@
-This is our PoC implementation of our CTIDH-1024 and CTIDH-2048.
-
+This is a PoC implementation of CTIDH-1024 and CTIDH-2048, maybe with some improvement.
 
 ## Dependencies
-sagemath, version >= 9.5 
+sagemath, version >= 10.1 (maybe >= 9.8 is enough).
+*Sage's finite field arithmetic is needed (the 'Primefield' is just a wrapper for counting number of operations), elliptic curves and isogenies for testing our algorithms.*
 
 
 ## License
-This project is licensed under the GPL v3 - see the LICENSE file for details.
+This repo is licensed under the GPL v3 - see the LICENSE file for details.
 
-*We reuse some code from the [sibc](https://github.com/JJChiDguez/sibc) library.*
+*We reuses some code from the [sibc](https://github.com/JJChiDguez/sibc) library.*
