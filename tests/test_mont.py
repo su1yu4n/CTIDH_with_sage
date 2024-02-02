@@ -10,9 +10,9 @@ from CTIDH import MontgomeryCurve, PrimeField
 proof.arithmetic(False)
 
 
-with open("parameters/p1024_CTIDH", "r") as f:
+with open("data/prime_info/p1024_CTIDH", "r") as f:
     p1024_info = json.load(f)
-with open("parameters/p2048_CTIDH", "r") as f:
+with open("data/prime_info/p2048_CTIDH", "r") as f:
     p2048_info = json.load(f)
 p1024 = p1024_info["p"]
 p2048 = p2048_info["p"]

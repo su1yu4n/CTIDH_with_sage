@@ -50,7 +50,7 @@ primes = dict(
 
 def write_primes_to_file(primes:dict):
     for prime_name in primes.keys():
-        with open(f'parameters/{prime_name}', 'w') as f:
+        with open(f'data/prime_info/{prime_name}', 'w') as f:
             json.dump(primes[prime_name], f)
 
 write_primes_to_file(primes=primes)
