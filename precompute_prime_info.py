@@ -38,15 +38,31 @@ def gen_prime_info(n, k, excluded=[], included=[]):
     return {"L": li_list, "n": n, "k": k, "f": f, "p": p}
 
 
-# TODO: Check p1024 and p2048 in original CTIDH
 primes = dict(
-    p1024_CTIDH= gen_prime_info(n=130, k=2, excluded=[739], included=[983]),
-    p2048_CTIDH= gen_prime_info(n=231, k=2, excluded=[5], included=[3413]),
+    p1024_CTIDH = gen_prime_info(n=130, k=2, excluded=[739], included=[983]),
+    p2048_CTIDH = gen_prime_info(n=231, k=2, excluded=[5], included=[3413]),
 )
 
 
-# TODO: get batch information and keyspace
-# TODO: Compute fine-tuned Velusqrt parmeters and shortest addition chains
+# Add batch, keyspace, sdac max length information 
+p1024_CTIDH_batch_info = {
+    'batch_start': [0, 2, 5, 10, 14, 20, 26, 32, 38, 44, 51, 58, 65, 71, 78, 85, 90, 96, 101, 111, 114, 124, 129],
+    'batch_stop': [2, 5, 10, 14, 20, 26, 32, 38, 44, 51, 58, 65, 71, 78, 85, 90, 96, 101, 111, 114, 124, 129, 130],
+    'batch_maxdaclen': [1, 3, 5, 6, 7, 8, 9, 9, 10, 10, 10, 10, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 13],
+    'batch_bound': [2, 4, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 3, 6, 2, 6, 2, 0],
+}
+
+primes["p1024_CTIDH"].update(p1024_CTIDH_batch_info)
+
+p2048_CTIDH_batch_info = {
+    'batch_start': [0, 9, 19, 27, 35, 42, 52, 64, 75, 85, 100, 110, 119, 127, 133, 143, 156, 166, 175, 187, 200, 210, 220, 230],
+    'batch_stop': [9, 19, 27, 35, 42, 52, 64, 75, 85, 100, 110, 119, 127, 133, 143, 156, 166, 175, 187, 200, 210, 220, 230, 231],
+    'batch_maxdaclen': [5, 7, 8, 9, 9, 10, 10, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 16],
+    'batch_bound': [1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 2, 0],
+}
+
+primes['p2048_CTIDH'].update(p2048_CTIDH_batch_info)
+
 
 def write_primes_to_file(primes:dict):
     for prime_name in primes.keys():

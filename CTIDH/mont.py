@@ -1,5 +1,6 @@
+import numpy
 from .primefield import PrimeField
-from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, bitlength
+from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read_SDAC_info
 
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
@@ -22,8 +23,16 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
 
     type_field = type(field(2))
 
+    batch_maxdaclen = prime_info["batch_maxdaclen"]
+    # Shortest Differential Addition Chains (SDACs) for each l_i, used in fast scalar multiplication.
+    SDACS = read_SDAC_info(prime_name)
+    assert len(SDACS) > 0, f'No precomputed sdac information for {prime_name}'
+    SDACS_LENGTH = list(map(len, SDACS))
+    SDACS_REVERSED = list(map(lambda x:x[::-1], SDACS))
 
-    # TODO: read SDAC info
+    def cmul(l: int):
+        return numpy.array([4.0 * (SDACS_LENGTH[L.index(l)] + 2), 2.0 * (SDACS_LENGTH[L.index(l)] + 2), 6.0 * (SDACS_LENGTH[L.index(l)] + 2) - 2.0])
+    c_xmul = list(map(cmul, L))  # list of the costs of each [l]P
 
     def measure(x, SQR=1.00, ADD=0.00):
         """
@@ -237,7 +246,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
 
         return (X_plus, Z_plus)
 
-    def xmul_Ladder(P: tuple, A24: tuple, j) -> tuple:
+    def xmul_Ladder(P: tuple, A24: tuple, j: int) -> tuple:
         """
         ----------------------------------------------------------------------
         xmul_Ladder():  Constant-time Montgomery Ladder
@@ -262,10 +271,10 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         return x0
 
 
-    def xmul_SDAC(P: tuple, n, A24: tuple) -> tuple:
+    def xmul_SDAC(P: tuple, A24: tuple, j: int) -> tuple:
         """
         ----------------------------------------------------------------------
-        xmul(): scalar mult that use Shortest Differential Addition Chain (SDAC)
+        Scalar mult for PUBLIC primes that use Shortest Differential Addition Chain (SDAC)
         input : a projective Montgomery x-coordinate point x(P) := XP/ZP, the
                 projective Montgomery constants A24:= A + 2C and C24:=4C where
                 E : y^2 = x^3 + (A/C)*x^2 + x, and an positive integer j
@@ -274,7 +283,23 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         """
         raise NotImplementedError
 
-    xmul = xmul_SDAC if SDAC else xmul_Ladder
+
+    def xmul_SDAC_safe(P: tuple, A24: tuple, j: int) -> tuple:
+        """
+        ----------------------------------------------------------------------
+        Timing attack safe scalar mult for PRIVATE primes that use Shortest Differential Addition Chain (SDAC).
+        This algorithm consider each batch's max dac length to resist timing attack.
+        input : a projective Montgomery x-coordinate point x(P) := XP/ZP, the
+                projective Montgomery constants A24:= A + 2C and C24:=4C where
+                E : y^2 = x^3 + (A/C)*x^2 + x, and an positive integer j
+        output: the projective Montgomery x-coordinate point x([L[j]]P)
+        ----------------------------------------------------------------------
+        """
+        # NOTE: Use batch_maxdaclen to achieve security.
+        raise NotImplementedError
+
+    xmul_public = xmul_SDAC if SDAC else xmul_Ladder
+    xmul_private = xmul_SDAC_safe if SDAC else xmul_Ladder
 
     # TODO: Add more useful things such as PRAC, eucild2d, cofactor_multiples, crisscross...
     # Read papers and see sibc...

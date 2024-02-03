@@ -1,10 +1,17 @@
 import json
 
+from functools import reduce
+
 
 # Dictionary which provides attribute access to its keys.
 class attrdict(dict):
     __getattr__ = dict.__getitem__
 
+
+def sign(x):
+    return (1, -1)[x < 0]  # Sign of an integer
+
+isequal = {True: 1, False: 0}  # Simulating constant-time integer comparison
 
 # memoize calls to the class constructors for fields
 # this helps typechecking by never creating two separate
@@ -67,6 +74,10 @@ def read_prime_info(prime_name="p2048_CTIDH"):
         'k': see below
         'f': 2**k, which is the cofactor
         'p': value of p. p = 2**k * L[0] * ... * L[n-1] - 1
+        'batch_start': the start index of each batch. eg. batch_start[0] = 0
+        'batch_stop': the end index + 1 of each batch. eg. batch_stop[-1] = len(L) 
+        'batch_maxdaclen': the max sdac length of primes in each batch
+        'batch_bound': keyspace info: the max value of absolute values' sum for each batch
     }
     """
     with open(f"data/prime_info/{prime_name}") as f:
@@ -104,3 +115,11 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
         sI_list.append(int(gs))
 
     return sI_list, sJ_list
+
+
+def read_SDAC_info(prime_name='p2048_CTIDH'):
+    SDAC_info = []
+    with open(f"data/sdacs/{prime_name}", 'r') as f:
+        for line in f:
+            SDAC_info.append(list(map(int, line.split())))
+    return SDAC_info
