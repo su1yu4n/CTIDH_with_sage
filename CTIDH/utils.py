@@ -72,3 +72,35 @@ def read_prime_info(prime_name="p2048_CTIDH"):
     with open(f"data/prime_info/{prime_name}") as f:
         return json.load(f)
 
+
+def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
+    """
+    Args:
+        prime_name (str, optional): "p1024_CTIDH" or "p2048_CTIDH". Defaults to "p2048_CTIDH".
+        scaled (bool, optional): Use scaled remainder tree or not. Defaults to True.
+
+    Returns:
+        sI_list, sJ_list: baby steps info, giant steps info resp.
+    """
+    suffix = '_scaled' if scaled else '_unscaled'
+
+    sJ_list = []
+    sI_list = []
+
+    steps_info_path = f"data/prime_info/{prime_name}" + suffix
+    with open(steps_info_path, 'r') as f:
+        steps = f.readlines()
+
+    if prime_name == 'p1024_CTIDH':
+        assert len(steps) == 130
+    elif prime_name == 'p2048_CTIDH':
+        assert len(steps) == 231
+    # else:
+    #     raise NotImplementedError()
+    
+    for step in steps:
+        bs, gs = step.split()
+        sJ_list.append(int(bs))
+        sI_list.append(int(gs))
+
+    return sI_list, sJ_list

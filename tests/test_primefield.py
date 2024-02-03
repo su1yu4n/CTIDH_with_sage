@@ -4,13 +4,13 @@ import json
 from sage.all import kronecker_symbol, proof
 
 from CTIDH import PrimeField
+from CTIDH.utils import read_prime_info
 
 proof.arithmetic(False)
 
-with open("data/prime_info/p1024_CTIDH", "r") as f:
-    p1024_info = json.load(f)
-with open("data/prime_info/p2048_CTIDH", "r") as f:
-    p2048_info = json.load(f)
+p1024_info = read_prime_info('p1024_CTIDH')
+p2048_info = read_prime_info('p2048_CTIDH')
+
 p1024 = p1024_info["p"]
 p2048 = p2048_info["p"]
 
