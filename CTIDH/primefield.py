@@ -201,6 +201,10 @@ def PrimeField(p: int):
             legendre_symbol = self ** ( (ZModPrime._p - 1) // 2)
             return True if legendre_symbol == 1 else False
 
+        def is_square_fast(self) -> bool:
+            # TODO: Implement this CCS' 23 algorithm.
+            raise NotImplementedError('Fast algorithm not implemented yet!')
+
         @classmethod
         def get_random(cls):
             return ZModPrime(GFp.random_element())

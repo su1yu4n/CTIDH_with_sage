@@ -123,3 +123,23 @@ def read_SDAC_info(prime_name='p2048_CTIDH'):
         for line in f:
             SDAC_info.append(list(map(int, line.split())))
     return SDAC_info
+
+
+# return the batch number of the batch that L[i] belongs to.
+def batchnumber_of_Li(i:int, batch_start: list, batch_stop: list):
+    for j in range(len(batch_start)):
+        if batch_start[j] <= i < batch_stop[j]:
+            return j
+        
+# return the max prime in the same batch as L[i]
+def batchmaxprime_of_Li(i: int, batch_start: list, batch_stop: list, L:list):
+    batch_num = batchnumber_of_Li(i, batch_start, batch_stop)
+    batchmaxprime_index = batch_stop[batch_num] - 1 # 
+    return L[batchmaxprime_index] 
+
+
+# return the min prime in the same batch as L[i]
+def batchminprime_of_Li(i: int, batch_start: list, batch_stop: list, L:list):
+    batch_num = batchnumber_of_Li(i, batch_start, batch_stop)
+    batchminprime_index = batch_start[batch_num]
+    return L[batchminprime_index] 

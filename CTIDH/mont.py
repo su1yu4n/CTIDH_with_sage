@@ -19,16 +19,21 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
     f = prime_info["f"]
     p = prime_info["p"]
 
+    batch_start = prime_info["batch_start"]
+    batch_stop = prime_info["batch_stop"]
+    batch_maxdaclen = prime_info["batch_maxdaclen"]
+    # batch_bound = prime_info["batch_bound"]
+
     field = PrimeField(p)
 
     type_field = type(field(2))
 
-    batch_maxdaclen = prime_info["batch_maxdaclen"]
     # Shortest Differential Addition Chains (SDACs) for each l_i, used in fast scalar multiplication.
     SDACS = read_SDAC_info(prime_name)
     assert len(SDACS) > 0, f'No precomputed sdac information for {prime_name}'
     SDACS_LENGTH = list(map(len, SDACS))
     SDACS_REVERSED = list(map(lambda x:x[::-1], SDACS))
+
 
     def cmul(l: int):
         return numpy.array([4.0 * (SDACS_LENGTH[L.index(l)] + 2), 2.0 * (SDACS_LENGTH[L.index(l)] + 2), 6.0 * (SDACS_LENGTH[L.index(l)] + 2) - 2.0])
@@ -43,6 +48,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         # In F_p, we have ADD_{F_p} = ADD x MUL_{F_p}
         """
         return x[0] + SQR * x[1] + ADD * x[2]
+
 
     def elligator(A: tuple):
         """Elligator from CTIDH original implementation (NOT Elligator 2)
@@ -111,74 +117,28 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         """
         return (affine + field(2), field(4))
 
-    def coeff(A: tuple):
-        """
-        ----------------------------------------------------------------------
-        coeff()
-        input : projective Montgomery constants A24 := A + 2C and C24 := 4C
-                where E : y^2 = x^3 + (A/C)*x^2 + x
-        output: the affine Montgomery coefficient A/C
-        ----------------------------------------------------------------------
-        """
-        A24, C24 = A
-        output = A24 + A24  # (2 * A24)
-        output -= C24  # (2 * A24) - C24
-        C24_inv = C24 ** (-1)  # 1 / (C24)
-        output += output  # 4*A = 2[(2 * A24) - C24]
-        output *= C24_inv  # A/C = 2[(2 * A24) - C24] / C24
+    # def coeff(A24: tuple):
+    #     """
+    #     ----------------------------------------------------------------------
+    #     coeff()
+    #     input : projective Montgomery constants A24 := A + 2C and C24 := 4C
+    #             where E : y^2 = x^3 + (A/C)*x^2 + x
+    #     output: the affine Montgomery coefficient A/C
+    #     ----------------------------------------------------------------------
+    #     """
+    #     A24, C24 = A24
+    #     output = A24 + A24  # (2 * A24)
+    #     output -= C24  # (2 * A24) - C24
+    #     C24_inv = C24 ** (-1)  # 1 / (C24)
+    #     output += output  # 4*A = 2[(2 * A24) - C24]
+    #     output *= C24_inv  # A/C = 2[(2 * A24) - C24] / C24
 
-        return output
+    #     return output
 
-    # TODO: Check if this is the same as CTIDH
-    def get_A24(P: tuple, Q: tuple, PQ: tuple) -> tuple:
-        """
-        ----------------------------------------------------------------------
-        coeff()
-        input : the affine Montgomery x-coordinate points x(P) := (XP : YP),
-                x(Q) := (XQ : ZQ), and x(P - Q) := (XPQ : ZPQ) on the curve
-                E : y^2 = x^3 + (A/C)*x^2 + x
-        output: the projective Montgomery coefficient (A + 2C : 4C)
-        ----------------------------------------------------------------------
-        """
-
-        XP, ZP = P; XQ, ZQ = Q; XPQ, ZPQ = PQ
-
-        t0 =XP +ZP  # XP + ZP
-        t1 = XQ + ZQ  # XQ + ZQ
-
-        t = t0 * t1  # (XP + ZP) * (XQ + ZQ)
-        XPXQ =XP * XQ  # XP * XQ
-        ZPZQ = ZP * ZQ  # ZP * ZQ
-
-        t -= XPXQ
-        t -= ZPZQ  # XPZQ + ZPXQ
-        s = XPXQ - ZPZQ  # XPXQ - ZPZQ
-
-        t0 = t * XPQ  # (XPZQ + ZPXQ) * XPQ
-        t1 = s * ZPQ  # (XPXQ - ZPZQ) * ZPQ
-        t0 += t1  # (XPZQ + ZPXQ) * XPQ + (XPXQ - ZPZQ) * ZPQ
-        t0 **= 2  # [(XPZQ + ZPXQ) * XPQ + (XPXQ - ZPZQ) * ZPQ] ^ 2
-
-        t1 = t * ZPQ  # (XPZQ + ZPXQ) * ZPQ
-        s = ZPZQ * XPQ  # ZPZQ * XPQ
-        t1 += s  # (XPZQ + ZPXQ) * ZPQ + ZPZQ * XPQ
-        s = XPXQ * XPQ  # (XPXQ) * XPQ
-        s += s  # 2 * [(XPXQ) * XPQ]
-        s += s  # 4 * [(XPXQ) * XPQ]
-        t1 *= s  # [(XPZQ + ZPXQ) * ZPQ + ZPZQ * XPQ] * (4 * [(XPXQ) * XPQ])
-
-        t = ZPZQ * ZPQ  # ZPZQ * ZPQ
-
-        XPXQ = (
-            t0 - t1
-        )  # [(XPZQ + ZPXQ) * XPQ + (XPXQ - ZPZQ) * ZPQ] ^ 2 - [(XPZQ + ZPXQ) * ZPQ + ZPZQ * XPQ] * (4 * [(XPXQ) * XPQ])
-        ZPZQ = s * t  # (4 * [(XPXQ) * XPQ]) * (ZPZQ * ZPQ)
-
-        # ---
-        B1 = ZPZQ + ZPZQ  # 2C
-        B0 = XPXQ + B1  # A + 2C
-        B1 += B1  # 4C
-        return (B0, B1)
+    def xA24(A: tuple) -> tuple:
+        Ax, Az = A
+        two_Az = Az + Az
+        return (Ax - two_Az, two_Az + two_Az)
 
     def isinfinity(P):
         """isinfinity(P) determines if x(P) := (XP : ZP) = (1 : 0)"""
