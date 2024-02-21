@@ -134,19 +134,22 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             # NOTE: Here we use l_fake to decide which formula to use(traditional velu or velusqrt) to avoid timing attack.
             # It may be unsafe if different primes in the same batch use different formulae.
             if l_fake <= self.HYBRID_BOUND:     # Use Velu formula
-                xiP_list = self.kps_t(l_fake, P, A24)
-                Xi_Zi_hats = []
-                for xiP in xiP_list:
-                    Xi, Zi = xiP
-                    Xi_Zi_hat = (Xi + Zi, Xi - Zi)
-                    Xi_Zi_hats.append(Xi_Zi_hat)
+                d = (l-1)//2
+                d_fake = (l_fake-1)//2
 
-                A_new = self.xisog_t(l, l_fake, Xi_Zi_hats, A)
+                xiP_list = self.kps_t(d_fake, P, A24)
+                Xi_Zi_hats = [(Xi+Zi, Xi-Zi) for (Xi, Zi) in xiP_list]
+                # for xiP in xiP_list:
+                #     Xi, Zi = xiP
+                #     Xi_Zi_hat = (Xi + Zi, Xi - Zi)
+                #     Xi_Zi_hats.append(Xi_Zi_hat)
+
+                A_new = self.xisog_t(d, d_fake, Xi_Zi_hats, A)
 
                 if Tnewlen > 0:
-                    Ts[0] = self.xeval_t(l, l_fake, Xi_Zi_hats, Ts[0])
+                    Ts[0] = self.xeval_t(d, d_fake, Xi_Zi_hats, Ts[0])
                 if Tnewlen > 1:
-                    Ts[1] = self.xeval_t(l, l_fake, Xi_Zi_hats, Ts[1])
+                    Ts[1] = self.xeval_t(d, d_fake, Xi_Zi_hats, Ts[1])
 
                 return A_new, Ts
             
@@ -156,28 +159,29 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
         
         # TODO: Complete traditional velu formula
-        def kps_t(self, l_fake: int, P: tuple, A24: tuple) -> List[tuple]:
+        def kps_t(self, d_fake: int, P: tuple, A24: tuple) -> List[tuple]:
             """Timing attack safe kps for traditional velu formula, 
             used in computing the l-isogeny phi: E -> E/<P>.
 
-            Return the list of x([i]P) for i from 1 to (l_fake - 1) // 2
+            Return the list of x([i]P) for i from 1 to d_fake = (l_fake - 1) // 2
 
             Args:
-                l_fake (int): the largest small odd prime in the batch of l
+                d_fake (int): See above. l_fake is the largest small odd prime in the batch of l
                 P (tuple): projective x-coordinate of the kernel point P (i.e. x(P))
                 A24 (tuple): A24 = (Ax+2Az : 4Az)
             """
             raise NotImplementedError
         
 
-        def xisog_t(self, l: int, l_fake: int, Xi_Zi_hats: List[tuple], A: tuple) -> tuple:
+        def xisog_t(self, d: int, d_fake: int, Xi_Zi_hats: List[tuple], A: tuple) -> tuple:
             """Timing attack safe xisog for traditional velu formula,
             Return the fraction representation of quadratic term's coefficient of the l-isogeny's codomain. 
             
             Args:
-                l (int): See above
-                l_fake (int): the largest small odd prime in the batch of l
+                d (int): d = (l-1)/2.
+                d_fake (int): (l_fake - 1)/2
                 Xi_Zi_hats (List[tuple]): list of (Xi+Zi : Xi-Zi) where (Xi : Zi) is x([i]P), P a generator of ker phi. 
+                i ranges from 1 to d_fake.
                 A (tuple): A = (Ax: Az). Ax and Az must have type ZModPrime(Primefield).
                 Ax/Az is the quadratic term's coefficient of domain curve's affine equation. 
 
@@ -188,12 +192,12 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             raise NotImplementedError
         
 
-        def xeval_t(self, l: int, l_fake: int, Xi_Zi_hats: List[tuple], T: tuple) -> tuple:
+        def xeval_t(self, d: int, d_fake: int, Xi_Zi_hats: List[tuple], T: tuple) -> tuple:
             """Push the point T to the codomain through the l-isogeny phi.
 
             Args:
-                l (int): degree of isogeny
-                l_fake (int): the largest prime in the same batch as l.
+                d (int): degree of isogeny
+                d_fake (int): the largest prime in the same batch as l.
                 Xi_Zi_hats (List[tuple]): (Xi+Zi : Xi-Zi) where (Xi:Zi) x[i]P, i = 1, ..., d_fake
                 T (tuple): (projective x-coordinate of) the point to push 
 
