@@ -194,8 +194,8 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             Xi_Zis.append(P)
             if d_fake >= 2:
                 Xi_Zis.append(self.curve.xdbl(P, A24))
-            for i in range(3, d_fake+1):
-                Xi_Zis.append(self.curve.xadd(Xi_Zis[i-2], P, Xi_Zis[i-2]))        
+            for i in range(2, d_fake):
+                Xi_Zis.append(self.curve.xadd(Xi_Zis[i-1], P, Xi_Zis[i-2]))        
             
             return Xi_Zis
         
@@ -255,3 +255,6 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
         
         def xeval_s(self, P, A):
             raise NotImplementedError
+        
+
+    return Formulae
