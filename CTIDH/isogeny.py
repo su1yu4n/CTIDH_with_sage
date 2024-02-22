@@ -1,4 +1,5 @@
 from typing import List
+from math import floor, sqrt
 
 from CTIDH.mont import MontgomeryCurve
 from CTIDH.utils import read_velusqrt_steps_info, hamming_weight, bitlength, isequal, batchmaxprime_of_Li, batchminprime_of_Li, batchnumber_of_Li
@@ -27,20 +28,23 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
     @doc(NAME)
     class Formulae:
-        def __init__(self, curve, tuned=True, scaled=True):
+        def __init__(self, curve, tuned=True, scaled=False):
             """_summary_
 
             Args:
                 curve (MontgomeryCurve): The object returned by MontgomeryCurve() in mont.py
                 tuned (bool, optional): True if fine-tuned velusqrt information is presented in data folder. Defaults to True.
                 scaled (bool, optional): Use scaled remainder tree or not. 
-                If True, it will read and use velusqrt tuned info for scaled version. Defaults to True.
+                If True, it will read and use velusqrt tuned info for scaled version. Defaults to False.
             """
             self.formula_name = formula_name
 
-            if tuned:
-                self.sI_list, self.sJ_list = read_velusqrt_steps_info(curve.prime_name, scaled)
-
+            if formula_name != 'tvelu':
+                if tuned:
+                    self.sI_list, self.sJ_list = read_velusqrt_steps_info(curve.prime_name, scaled)
+                else:
+                    self.sI_list = None
+                    self.sJ_list = None
 
             self.HYBRID_BOUND = {'tvelu':max(curve.L), 'svelu':1, 'hvelu':cutoff}[formula_name]
 
@@ -83,11 +87,16 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 map(self.cisog, self.L)
             )  # list of the costs of each degree-l isogeny construction
             
-
-            # Now, we proceed to store all the correct costs
-            if formula_name != 'tvelu' and uninitialized:
-                print("// Precomputation cost regarding kps, xisog, and xeval of the velusqrt formulae")
-                self.velusqrt_cost()
+             
+            '''
+            TODO: Compute the cost.
+            NOTE: Currently this is not performed, because it requires finding generators, which need PRAC, cofactor_multiples and more...
+                Also it is not clear that whether sibc's routine is adaptable to CTIDH .
+            '''
+            # # Now, we proceed to store all the correct costs
+            # if formula_name != 'tvelu' and uninitialized:
+            #     print("// Precomputation cost regarding kps, xisog, and xeval of the velusqrt formulae")
+            #     self.velusqrt_cost()
                 
 
         def ceval(self, l: int):
@@ -154,7 +163,18 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 return A_new, Ts
             
             else:    # Use Velusqrt formulas
-                self.set_parameters_velu(self.sJ_list[i], self.sI_list[i], i)
+                if self.tuned:
+                    self.set_parameters_velu(self.sJ_list[i], self.sI_list[i], i)
+                else:
+                    if self.L[i] == 3:
+                        b = 0
+                        c = 0
+                    else:
+                        b = int(floor(sqrt(self.L[i] - 1) / 2.0))
+                        c = int(floor((self.L[i] - 1.0) / (4.0 * b)))
+                    self.set_parameters_velu(b, c, i)
+                # Now sI, sJ, sK are set.
+
                 raise NotImplementedError("matryoshka isogeny of velusqrt not implemented yet!")
 
         
@@ -170,7 +190,14 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 P (tuple): projective x-coordinate of the kernel point P (i.e. x(P))
                 A24 (tuple): A24 = (Ax+2Az : 4Az)
             """
-            raise NotImplementedError
+            Xi_Zis = []
+            Xi_Zis.append(P)
+            if d_fake >= 2:
+                Xi_Zis.append(self.curve.xdbl(P, A24))
+            for i in range(3, d_fake+1):
+                Xi_Zis.append(self.curve.xadd(Xi_Zis[i-2], P, Xi_Zis[i-2]))        
+            
+            return Xi_Zis
         
 
         def xisog_t(self, d: int, d_fake: int, Xi_Zi_hats: List[tuple], A: tuple) -> tuple:
