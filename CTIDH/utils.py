@@ -50,8 +50,7 @@ def binrep(k: int) -> list:
 # Note that this PoC implementation does not implement CMOV and CSWAP carefully,
 # Maybe it should be implement in another way to make sure it safe.
 def CMOV(a, b, control: bool):
-    a = b if control else a
-    return a
+    return b if control else a
 
 
 def CSWAP(a, b, control: bool):

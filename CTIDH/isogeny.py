@@ -2,7 +2,7 @@ from typing import List
 from math import floor, sqrt
 
 from CTIDH.mont import MontgomeryCurve
-from CTIDH.utils import read_velusqrt_steps_info, hamming_weight, bitlength, isequal, batchmaxprime_of_Li, batchminprime_of_Li, batchnumber_of_Li
+from CTIDH.utils import read_velusqrt_steps_info, hamming_weight, bitlength, isequal, batchmaxprime_of_Li, batchminprime_of_Li, batchnumber_of_Li, CMOV, CSWAP
 from CTIDH.polymul import PolyMul
 from CTIDH.polyredc import PolyRedc
 
@@ -216,7 +216,40 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 tuple: A' = (Ax': Az'), where Ax'/Az' is the quadratic term's coefficient of the codomain.
                 Ax', Az' have type ZModPrime
             """
-            raise NotImplementedError
+            assert d_fake >= d
+            Ax, Az = A
+            l = 2*d + 1
+
+            t = Az + Az
+            aE = Ax + t; dE = Ax - t
+            al = aE ** l; dl = dE ** l # TODO: Change to constant-time. One way is to pad l, use left-to-right multiplication and cmov.
+            pi_Y = self.field(1); pi_Z = self.field(1)
+            tmp1 = self.field(1); tmp2 = self.field(1) # pi_Y and pi_Z w.r.t. d_fake
+
+            # print(f'Xi_Zi_hats[:d] = {Xi_Zi_hats[:d]}')
+            # FIXME: Wrong output
+            # for i in range(d_fake):
+            #     # NOTE: In my failed test, these tmp1 tmp2 are always 1... why?
+            #     tmp1 *= Xi_Zi_hats[i][1]
+            #     tmp2 *= Xi_Zi_hats[i][0]
+            #     print(f'tmp1 = {tmp1}')
+            #     print(f'tmp2 = {tmp2}')
+
+            #     pi_Y = CMOV(pi_Y, tmp1, i < d)
+            #     # pi_Y = tmp1 if i < d else pi_Y
+            #     pi_Z = CMOV(pi_Z, tmp2, i < d)
+            #     # pi_Z = tmp2 if i < d else pi_Z
+            #     # print(f'pi_Y = {pi_Y}')
+            #     # print(f'pi_Z = {pi_Z}')
+
+            for i in range(d):
+                pi_Y *= Xi_Zi_hats[i][1]
+                pi_Z *= Xi_Zi_hats[i][0]
+            
+            aE_new = al * pi_Z ** 8; dE_new = dl * pi_Y ** 8
+            aE_dE = aE_new + dE_new; Ax_new = aE_dE + aE_dE; Az_new = aE_new - dE_new
+
+            return (Ax_new, Az_new)
         
 
         def xeval_t(self, d: int, d_fake: int, Xi_Zi_hats: List[tuple], T: tuple) -> tuple:
