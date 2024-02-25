@@ -187,8 +187,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         XP, ZP = P
         XQ, ZQ = Q
         XPQ, ZPQ = PQ
-        #TODO: Remove this unnecessary assert
-        assert XPQ != 0 and ZPQ != 0
+        # assert XPQ != 0
 
         V0 = XP + ZP
         V1 = XQ - ZQ
@@ -203,7 +202,9 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         V4 **= 2
         X_plus = ZPQ * V3
         Z_plus = XPQ * V4
-
+        # if ZPQ == 0:
+        #     assert X_plus == 0 and Z_plus == 0 
+            # X_plus = 1; Z_plus = 0
         return (X_plus, Z_plus)
 
     def xmul_Ladder(P: tuple, A24: tuple, j: int) -> tuple:
