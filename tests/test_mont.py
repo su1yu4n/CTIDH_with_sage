@@ -2,10 +2,11 @@ import unittest
 import json
 
 from sage.all import EllipticCurve, proof, GF
-from random import randint
+# from random import randint
 # from sage.all import *
 
 from CTIDH import MontgomeryCurve, PrimeField
+from CTIDH.utils import get_randint
 
 proof.arithmetic(False)
 
@@ -181,7 +182,7 @@ class TestMontgomeryCurve(unittest.TestCase):
                     Px = get_affine_from_projective(P)
                     sage_P = sage_EC.lift_x(sage_Fp(Px))
                     sage_Q = sage_P
-                    i = randint(0, len(L) - 1)
+                    i = get_randint(0, len(L) - 1)
                     sage_Q = L[i] * sage_P
 
                     Q = MontCurve.xmul_Ladder(P, A24, i)

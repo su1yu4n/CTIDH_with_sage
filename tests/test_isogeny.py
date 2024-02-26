@@ -1,11 +1,11 @@
 import unittest
-from random import randint
+# from random import randint
 
 from sage.all import EllipticCurve, proof, GF
 
 from CTIDH import PrimeField, MontgomeryCurve, MontgomeryIsogeny
 
-from CTIDH.utils import read_prime_info, batchmaxprime_of_Li
+from CTIDH.utils import read_prime_info, batchmaxprime_of_Li, get_randint
 
 
 p1024_info = read_prime_info('p1024_CTIDH')
@@ -58,12 +58,12 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 for _ in range(num_isogeny):
                     P, _ = MontCurve.elligator(A)
-                    d_fake = (MontCurve.L[randint(0, MontCurve.n - 1)] - 1) // 2
+                    d_fake = (MontCurve.L[get_randint(0, MontCurve.n - 1)] - 1) // 2
                     Xi_Zis = MontIsogeny.kps_t(d_fake, P, A24) 
                     self.assertEqual(len(Xi_Zis), d_fake)
                     self.assertEqual(Xi_Zis[0], P)
 
-                    k = randint(1, d_fake)
+                    k = get_randint(1, d_fake)
                     
                     Px = get_affine_from_projective(P)
                     P_sage = sage_EC.lift_x(sage_Fp(Px))
@@ -88,7 +88,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 A_new = 1
                 for _ in range(num_isogeny):
-                    ind = randint(0, MontCurve.n - 1)
+                    ind = get_randint(0, MontCurve.n - 1)
                     l = MontCurve.L[ind]
                     # print(f'ind = {ind}')
                     l_fake = batchmaxprime_of_Li(ind, MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L)

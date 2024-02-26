@@ -1,7 +1,7 @@
 import json
-
+import random
+from datetime import datetime
 from functools import reduce
-
 
 # Dictionary which provides attribute access to its keys.
 class attrdict(dict):
@@ -142,3 +142,9 @@ def batchminprime_of_Li(i: int, batch_start: list, batch_stop: list, L:list):
     batch_num = batchnumber_of_Li(i, batch_start, batch_stop)
     batchminprime_index = batch_start[batch_num]
     return L[batchminprime_index] 
+
+
+# for random tests
+def get_randint(a: int, b: int):
+    random.seed(datetime.now().strftime('%H:%M:%S'))
+    return random.randint(a, b)
