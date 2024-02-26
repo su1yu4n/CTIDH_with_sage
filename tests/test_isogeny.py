@@ -75,7 +75,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 test_one_curve(a=field.get_random())
 
         
-    def test_xisog_t(self, num_curve=10, num_isogeny=5):
+    def test_xisog_t(self, num_curve=5, num_isogeny=5):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
             (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048)
@@ -126,8 +126,66 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 a_new = test_one_curve(field(a_new))       
 
 
-    def test_xeval_t(self):
-        pass
+    def test_xeval_t(self, num_curve=10, num_isogeny=5):
+        for sage_Fp, field, MontCurve, MontIsogeny in [
+            (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
+            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048)
+        ]:           
+            # test and return a new curve's coefficient, because we need to ensure the curve is supersingular
+            def test_one_curve(a=field(0), num_isogeny=num_isogeny) -> int:
+                A = (a, field(1))
+                A24 = (a+2, field(4))
+
+                sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
+                A_new = 1
+                for _ in range(num_isogeny):
+                    ind = get_randint(0, MontCurve.n - 1)
+                    l = MontCurve.L[ind]
+                    # print(f'ind = {ind}')
+                    l_fake = batchmaxprime_of_Li(ind, MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L)
+                    d = (l-1) // 2
+                    d_fake = (l_fake - 1)//2
+
+                    assert d_fake >= d
+
+                    while True:
+                        T, _ = MontCurve.elligator(A)
+                        P = T
+                        P = MontCurve.xdbl(P, A24); P = MontCurve.xdbl(P, A24) # clear cofactor
+                        for j in range(ind):
+                            P = MontCurve.xmul_public(P, A24, j)
+                        for j in range(ind+1, MontCurve.n):
+                            P = MontCurve.xmul_public(P, A24, j)
+                        if not MontCurve.isinfinity(P):
+                            break
+
+                    Xi_Zis = MontIsogeny.kps_t(d_fake, P, A24)
+                    Xi_Zi_hats = [(Xi+Zi, Xi-Zi) for (Xi, Zi) in Xi_Zis]
+
+                    A_new = MontIsogeny.xisog_t(d, d_fake, Xi_Zi_hats, A)
+                    phi_T = MontIsogeny.xeval_t(d, d_fake, Xi_Zi_hats, T)
+
+                    Px = sage_Fp(get_affine_from_projective(P))
+                    sage_P = sage_EC.lift_x(Px)
+                    self.assertEqual(sage_P.order(), l)
+                    sage_phi = sage_EC.isogeny(kernel=sage_P, model='montgomery')
+                    Tx = get_affine_from_projective(T)
+                    sage_T = sage_EC.lift_x(sage_Fp(Tx))
+                    sage_phi_Tx = sage_phi(sage_T).xy()[0]
+
+                    # print(f'codomain is {phi.codomain()}')
+                    # sage_A_new = phi.codomain().a2()
+                    # self.assertEqual(sage_Fp(get_affine_from_projective(A_new)), sage_A_new)
+
+                    self.assertEqual(sage_phi_Tx, get_affine_from_projective(phi_T))
+
+                return int(get_affine_from_projective(A_new))
+           
+            a_new = test_one_curve()
+            for _ in range(num_curve-1):
+                a_new = test_one_curve(field(a_new))
+
+
     def test_kps_s(self):
         pass
     def test_xisog_s(self):

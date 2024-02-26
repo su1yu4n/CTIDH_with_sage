@@ -206,6 +206,19 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         #     assert X_plus == 0 and Z_plus == 0 
             # X_plus = 1; Z_plus = 0
         return (X_plus, Z_plus)
+    
+
+    def crisscross(alpha, beta, gamma, delta):
+        """ crisscross() computes a*c + b*d, and a*c - b*d """
+        t_1 = (alpha * delta)
+        t_2 = (beta * gamma)
+        #return (t_1 + t_2), (t_1 - t_2)
+        # shave off a FF allocation: ##
+        t_3 = t_1.copy() # object.__new__(t_1.__class__); t_3.x = t_1.x #      ## copy(t_1)
+        t_1 += t_2                    ##
+        t_3 -= t_2                   ##
+        return t_1, t_3 # (t_1 + t_2), (t_1 - t_2)
+
 
     def xmul_Ladder(P: tuple, A24: tuple, j: int) -> tuple:
         """

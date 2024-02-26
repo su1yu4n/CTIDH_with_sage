@@ -264,7 +264,17 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             Returns:
                 tuple: (projective x-coordinate of) the image point phi(T)
             """
-            raise NotImplementedError
+            X, Z = T
+            X_hat, Z_hat = X+Z, X-Z
+            X1_hat, Z1_hat = Xi_Zi_hats[0]
+            X_prime, Z_prime = self.curve.crisscross(X1_hat, Z1_hat, X_hat, Z_hat)
+            # TODO: Change to constant-time
+            for i in range(1, d):
+                Xi_hat, Zi_hat = Xi_Zi_hats[i]
+                t0, t1 = self.curve.crisscross(Xi_hat, Zi_hat, X_hat, Z_hat)
+                X_prime, Z_prime = t0*X_prime, t1*Z_prime
+            X_prime, Z_prime = X*X_prime**2, Z*Z_prime**2
+            return X_prime, Z_prime
 
 
         # NOTE: This functions is used for setting the cardinalities sI, sJ, and sK
