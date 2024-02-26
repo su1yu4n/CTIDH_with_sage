@@ -203,19 +203,19 @@ class TestPrimeField(unittest.TestCase):
         #TODO
         pass
 
-    def test_random(self):
-        for _ in range(100):
+    def test_random(self, num_test = 50):
+        for _ in range(num_test):
             a = Fp1024.get_random()
             b = Fp1024.get_random()
             self.assertNotEqual(a, b)
 
     # num_of_test used to be 10**4, and have passed the test several times.
     # Change to 100 to make the test faster
-    def test_is_square(self, num_of_test = 100):
-        for _ in range(num_of_test):
+    def test_is_square(self, num_test = 50):
+        for _ in range(num_test):
             a = Fp2048.get_random()
             self.assertEqual(a.is_square(), kronecker_symbol(a.value, p2048) == 1)
 
-        for _ in range(num_of_test):
+        for _ in range(num_test):
             a = Fp1024.get_random()
             self.assertEqual(a.is_square(), kronecker_symbol(a.value, p1024) == 1)

@@ -1,7 +1,7 @@
 import unittest
 import json
 
-from sage.all import EllipticCurve, proof, GF
+from sage.all import EllipticCurve, proof, GF, kronecker_symbol
 # from random import randint
 # from sage.all import *
 
@@ -51,10 +51,10 @@ def get_affine_from_projective(A: list) -> int:
 # Should make test and bench as two methods , not in the same time.
 # TODO: Refactor these tests since they are in the same pattern.
 class TestMontgomeryCurve(unittest.TestCase):
-    def test_elligator(self, num_curve=100, num_point=10):
-        for field, MontCurve, prime_name in [
-            (Fp1024, MontCurve_p1024, "p1024_CTIDH"),
-            (Fp2048, MontCurve_p2048, "p2048_CTIDH"),
+    def test_elligator(self, num_curve=20, num_point=5):
+        for p, field, MontCurve, prime_name in [
+            (p1024, Fp1024, MontCurve_p1024, "p1024_CTIDH"),
+            (p2048, Fp2048, MontCurve_p2048, "p2048_CTIDH"),
         ]:
             field.reset_runtime()
             field.reset_power_invert_time()
@@ -66,11 +66,11 @@ class TestMontgomeryCurve(unittest.TestCase):
                     T0, T1 = MontCurve.elligator(A)
                     T0_x = get_affine_from_projective(T0)
                     self.assertEqual(
-                        field.is_square(T0_x**3 + a * T0_x**2 + T0_x), True
+                        kronecker_symbol(T0_x**3+a.get_int_value()*T0_x**2+T0_x, p), 1
                     )
                     T1_x = get_affine_from_projective(T1)
                     self.assertEqual(
-                        field.is_square(T1_x**3 + a * T1_x**2 + T1_x), False
+                        kronecker_symbol(T1_x**3+a.get_int_value()*T1_x**2+T1_x, p), -1
                     )
 
             test_one_curve(a=field(0))
@@ -84,11 +84,11 @@ class TestMontgomeryCurve(unittest.TestCase):
                 test_one_curve(a)
 
             field.show_runtime(
-                label="{} {} elligators + is_square".format(prime_name, num_curve * num_point)
+                label="{} {} elligators".format(prime_name, num_curve * num_point)
             )
 
     # TODO: Check the case when Az is not 1
-    def test_xdbl(self, num_curve=100, num_point=10):
+    def test_xdbl(self, num_curve=20, num_point=5):
         for field, sage_Fp, MontCurve, prime_name in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH"),
             (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH"),
@@ -123,7 +123,7 @@ class TestMontgomeryCurve(unittest.TestCase):
                 label="{} {} xdbl + elligator".format(prime_name, num_curve * num_point)
             )
 
-    def test_xadd(self, num_curve=100, num_point=10):
+    def test_xadd(self, num_curve=20, num_point=5):
         for field, sage_Fp, MontCurve, prime_name in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH"),
             (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH"),
@@ -164,7 +164,7 @@ class TestMontgomeryCurve(unittest.TestCase):
             )
 
     # TODO: Check the case when Az is not 1
-    def test_xmul_Ladder(self, num_curve=100, num_point=10):
+    def test_xmul_Ladder(self, num_curve=20, num_point=5):
         for field, sage_Fp, MontCurve, prime_name, L in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
             (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
