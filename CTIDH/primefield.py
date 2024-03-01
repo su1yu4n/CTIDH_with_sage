@@ -58,7 +58,6 @@ def PrimeField(p: int):
                     "Cannot convert {} type {} to a ZModPrime!".format(type(elem), elem)
                 )
 
-            self._repr = 'ZModPrime {} mod {}'.format(elem, prime_name)
 
         def __add__(self, other):
             ZModPrime.add_count += 1
@@ -186,8 +185,11 @@ def PrimeField(p: int):
             other = get_value(other)
             return self.value == other
         
+        def __str__(self):
+            return 'ZModPrime {} mod {}'.format(self.value, prime_name)
+        
         def __repr__(self):
-            return self._repr
+            return str(self)
 
         def get_int_value(self):
             return int(self.value)
