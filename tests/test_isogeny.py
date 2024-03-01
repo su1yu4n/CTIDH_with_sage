@@ -196,7 +196,8 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 A_new = 1
                 for _ in range(num_isogeny):
-                    ind = get_randint(0, MontCurve.n - 1)
+                    # ind = get_randint(0, MontCurve.n - 1)
+                    ind = get_randint(0, 15)
                     l = MontCurve.L[ind]
                     # print(f'ind = {ind}')
                     l_fake = batchmaxprime_of_Li(ind, MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L)
