@@ -224,32 +224,18 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             aE = Ax + t; dE = Ax - t
             al = aE ** l; dl = dE ** l # TODO: Change to constant-time. One way is to pad l, use left-to-right multiplication and cmov.
             pi_Y = self.field(1); pi_Z = self.field(1)
-            tmp1 = self.field(1); tmp2 = self.field(1) # pi_Y and pi_Z w.r.t. d_fake
 
-            print(f'Xi_Zi_hats[:d] = {Xi_Zi_hats[:d]}')
-            # FIXME: Wrong output
+            # print(f'd = {d}, d_fake = {d_fake}')
             for i in range(d_fake):
-                # NOTE: In my failed test, these tmp1 tmp2 are always 1... why?
-                print(f'In for loop, i = {i}')
-                print('Before tmp *= Xi_hat or Zi_hat')
-                print(f'tmp1 = {tmp1}')
-                print(f'tmp2 = {tmp2}')
-                tmp1 *= Xi_Zi_hats[i][1]
-                tmp2 *= Xi_Zi_hats[i][0]
-                print('After tmp *= Xi_hat or Zi_hat')
-                print(f'tmp1 = {tmp1}')
-                print(f'tmp2 = {tmp2}')
-
-                pi_Y = CMOV(pi_Y, tmp1, i < d)
-            #     # pi_Y = tmp1 if i < d else pi_Y
-                pi_Z = CMOV(pi_Z, tmp2, i < d)
-            #     # pi_Z = tmp2 if i < d else pi_Z
-            #     # print(f'pi_Y = {pi_Y}')
-            #     # print(f'pi_Z = {pi_Z}')
+                tmp1 = pi_Y * Xi_Zi_hats[i][1]
+                tmp2 = pi_Z * Xi_Zi_hats[i][0]
+                pi_Y = CMOV(pi_Y, tmp1, i <= d-1)
+                pi_Z = CMOV(pi_Z, tmp2, i <= d-1)
 
             # for i in range(d):
             #     pi_Y *= Xi_Zi_hats[i][1]
             #     pi_Z *= Xi_Zi_hats[i][0]
+            # print(f'Correct pi_Y = {pi_Y}, pi_Z = {pi_Z}')
             
             aE_new = al * pi_Z ** 8; dE_new = dl * pi_Y ** 8
             aE_dE = aE_new + dE_new; Ax_new = aE_dE + aE_dE; Az_new = aE_new - dE_new
