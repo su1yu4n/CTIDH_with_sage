@@ -2,6 +2,7 @@ import json
 import random
 from datetime import datetime
 from functools import reduce
+import copy
 
 # Dictionary which provides attribute access to its keys.
 class attrdict(dict):
@@ -50,7 +51,8 @@ def binrep(k: int) -> list:
 # Note that this PoC implementation does not implement CMOV and CSWAP carefully,
 # Maybe it should be implement in another way to make sure it safe.
 def CMOV(a, b, control: bool):
-    return b if control else a
+    b_copy = copy.deepcopy(b)
+    return b_copy if control else a
 
 
 def CSWAP(a, b, control: bool):
