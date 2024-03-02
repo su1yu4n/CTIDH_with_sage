@@ -183,10 +183,10 @@ class TestMontgomeryIsogeny(unittest.TestCase):
     #             a_new = test_one_curve(field(a_new))
 
 
-    def test_tvelu(self, num_curve=5, num_isogeny=3):
+    def test_tvelu(self, num_curve=20, num_isogeny=10):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
-            # (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048) # too slow for a regular test
+            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048) # too slow for a routine test
         ]:           
             # test and return a new curve's coefficient, because we need to ensure the curves we choose are all supersingular
             def test_one_curve(a=field(0), num_isogeny=num_isogeny) -> int:
@@ -196,8 +196,8 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 A_new = 1
                 for _ in range(num_isogeny):
-                    # ind = get_randint(0, MontCurve.n - 1)
-                    ind = get_randint(0, 15)
+                    ind = get_randint(0, MontCurve.n - 1)
+                    # ind = get_randint(0, 15)
                     l = MontCurve.L[ind]
                     # print(f'ind = {ind}')
                     l_fake = batchmaxprime_of_Li(ind, MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L)
