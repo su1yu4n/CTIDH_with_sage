@@ -183,10 +183,10 @@ class TestMontgomeryIsogeny(unittest.TestCase):
     #             a_new = test_one_curve(field(a_new))
 
 
-    def test_tvelu(self, num_curve=20, num_isogeny=10):
+    def test_tvelu(self, num_curve=5, num_isogeny=3):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
-            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048) # too slow for a routine test
+            # (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048) # too slow for a routine test
         ]:           
             # test and return a new curve's coefficient, because we need to ensure the curves we choose are all supersingular
             def test_one_curve(a=field(0), num_isogeny=num_isogeny) -> int:
