@@ -1,10 +1,11 @@
 import unittest
 import json
+import random
 
 from sage.all import kronecker_symbol, proof
 
 from CTIDH import PrimeField
-from CTIDH.utils import read_prime_info
+from CTIDH.utils import read_prime_info, get_randint
 
 proof.arithmetic(False)
 
@@ -200,7 +201,21 @@ class TestPrimeField(unittest.TestCase):
         pass
 
 
-    def test_safe_pow(self):
+    def test_safe_pow(self, num_test=100):
+        Fp2048.reset_runtime()
+        Fp2048.reset_power_invert_time()
+        
+        for _ in range(num_test):
+            a = Fp2048(get_randint(1, p2048))
+            e = get_randint(3, 2**32-1)
+            e_max = get_randint(3, 2**32-1)
+            if e_max < e:
+                e_max, e = e, e_max
+            
+            
+        
+
+
         raise NotImplementedError
 
 
