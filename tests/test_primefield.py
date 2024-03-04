@@ -199,6 +199,11 @@ class TestPrimeField(unittest.TestCase):
         #TODO
         pass
 
+
+    def test_safe_pow(self):
+        raise NotImplementedError
+
+
     def test_invert(self):
         #TODO
         pass
