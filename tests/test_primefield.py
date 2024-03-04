@@ -1,6 +1,5 @@
 import unittest
 import json
-import random
 
 from sage.all import kronecker_symbol, proof
 
@@ -202,21 +201,24 @@ class TestPrimeField(unittest.TestCase):
 
 
     def test_safe_pow(self, num_test=100):
-        Fp2048.reset_runtime()
-        Fp2048.reset_power_invert_time()
-        
-        for _ in range(num_test):
-            a = Fp2048(get_randint(1, p2048))
-            e = get_randint(3, 2**32-1)
-            e_max = get_randint(3, 2**32-1)
-            if e_max < e:
-                e_max, e = e, e_max
-            
-            
-        
+        for Fp, p in [(Fp1024, p1024), (Fp2048, p2048)]:
+            for _ in range(num_test):
+                Fp.reset_runtime()
+                Fp.reset_power_invert_time()
+                a = Fp(get_randint(1, p-1))
+                e = get_randint(3, 2**12)
+                e_max = get_randint(3, 2**12)
+                if e_max < e:
+                    e_max, e = e, e_max
+                
+                e_maxbitlen = e_max.bit_length()
+                result = a.safe_pow(e, e_maxbitlen)
+                self.assertEqual(Fp.pow_count, 1)
+                self.assertEqual(Fp.add_count, 0)
+                self.assertEqual(Fp.mul_count, e_maxbitlen-1)
+                self.assertEqual(Fp.sqr_count, e_maxbitlen-1)
 
-
-        raise NotImplementedError
+                self.assertEqual(result, a**e)
 
 
     def test_invert(self):
