@@ -1,7 +1,9 @@
 from sage.all import GF, proof, is_prime
 from sage.rings.finite_rings.integer_mod import IntegerMod_gmp, IntegerMod_int
 
-from .utils import bitlength, hamming_weight, memoize
+from .utils import bitlength, hamming_weight, memoize, CMOV
+
+import copy
 
 proof.arithmetic(False)
 
@@ -132,7 +134,7 @@ def PrimeField(p: int):
                     - self ** e
             Notes
             -----
-                    - This is a constant-time implementation by using the left-to-right method
+                    - The Fp-operations are counted correspond to the cost of left-to-right method.
                     - It allows negative exponents, but any exponent is expected to belong to |[ 0 .. p - 1 ]|
             """
             if e == 0:
@@ -173,6 +175,37 @@ def PrimeField(p: int):
             else: # e < 0
                 raise NotImplementedError('Unexpected behavior: performing a **= e, e < 0 in CTIDH.')
 
+        def safe_pow(self, e:int, e_maxbitlen:int):
+            """Timing-safe powmod. Return a ZModPrime with value self.value ** e
+
+            Args:
+                e (int): the exponent
+                e_maxbitlen (int): the possible max value of e's bitlength. 
+
+            NOTE: To achieve timing-safe property, this function pretends to compute the case exponent equals 2**e_maxbitlen
+
+            """
+            self.pow_count += 1
+            
+            a = self.value
+            tmp1 = copy.deepcopy(self) # a ** padded_e
+            tmp2 = copy.deepcopy(self) 
+            e_bitlen = bitlength(e)
+
+            padded_e = e << (e_maxbitlen - e_bitlen)
+            ans = copy.deepcopy(self)
+            # tmp and ans have initial value a
+            # start from the second MSB
+            for i in range(2, e_maxbitlen+1):
+                tmp1 = tmp1 ** 2
+                tmp2 = tmp1 * a
+                should_mov = (padded_e >> (e_maxbitlen - i)) & 1 # if 1 then mov, if 0 then don't move
+                tmp1 = CMOV(tmp1, tmp2, should_mov)
+
+                ans = CMOV(ans, tmp1, i <= e_bitlen)
+            
+            return ans
+                
         def __invert__(self):
             # TODO: write a faster constant-time invert.
             # Currently we use self.x**(p-2).
