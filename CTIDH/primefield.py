@@ -187,7 +187,7 @@ def PrimeField(p: int):
             """
             self.pow_count += 1
             
-            a = self.value
+            a = self
             tmp1 = copy.deepcopy(self) # a ** padded_e
             tmp2 = copy.deepcopy(self) 
             e_bitlen = bitlength(e)
