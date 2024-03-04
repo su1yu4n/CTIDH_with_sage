@@ -1,6 +1,6 @@
 import json
 import random
-from datetime import datetime
+import time
 from functools import reduce
 import copy
 
@@ -148,5 +148,5 @@ def batchminprime_of_Li(i: int, batch_start: list, batch_stop: list, L:list):
 
 # for random tests
 def get_randint(a: int, b: int):
-    random.seed(datetime.now().strftime('%H:%M:%S'))
+    random.seed(time.time())
     return random.randint(a, b)
