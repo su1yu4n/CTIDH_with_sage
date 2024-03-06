@@ -138,7 +138,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
     def xA24(A: tuple) -> tuple:
         Ax, Az = A
         two_Az = Az + Az
-        return (Ax - two_Az, two_Az + two_Az)
+        return (Ax + two_Az, two_Az + two_Az)
 
     def isinfinity(P):
         """isinfinity(P) determines if x(P) := (XP : ZP) = (1 : 0)"""
