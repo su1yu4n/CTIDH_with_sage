@@ -103,5 +103,5 @@ GitHub.sublime-settings
 !.vscode/tasks.json 
 !.vscode/launch.json 
 !.vscode/extensions.json 
+
 .history
-.vscode/settings.json
