@@ -272,7 +272,7 @@ def PrimeField(p: int):
                 end="\n",
             )
 
-    prime_name = 'p1024_CTIDH' if p.bit_length() == 1024 else 'p2048_CTIDH'
+    prime_name = 'p1024_CTIDH' if p.bit_length() <= 1025 else 'p2048_CTIDH'
     ZModPrime.__name__ = f'ZModPrime with p = {prime_name}'
 
     return ZModPrime
