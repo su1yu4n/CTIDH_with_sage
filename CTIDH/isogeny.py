@@ -178,7 +178,6 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 raise NotImplementedError("matryoshka isogeny of velusqrt not implemented yet!")
 
         
-        # TODO: Complete traditional velu formula
         def kps_t(self, d_fake: int, P: tuple, A24: tuple) -> List[tuple]:
             """Timing attack safe kps for traditional velu formula, 
             used in computing the l-isogeny phi: E -> E/<P>.
@@ -218,11 +217,11 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             """
             assert d_fake >= d
             Ax, Az = A
-            l = 2*d + 1
+            l = 2*d + 1; l_maxbitlen = (2*d_fake + 1).bit_length()
 
             t = Az + Az
             aE = Ax + t; dE = Ax - t
-            al = aE ** l; dl = dE ** l # TODO: Change to constant-time. One way is to pad l, use left-to-right multiplication and cmov.
+            al = aE.safe_pow(l, l_maxbitlen); dl = dE.safe_pow(l, l_maxbitlen)
             pi_Y = self.field(1); pi_Z = self.field(1)
 
             # print(f'd = {d}, d_fake = {d_fake}')
