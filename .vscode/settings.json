@@ -2,7 +2,7 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        "./CTIDH",
+        "./tests",
         "-p",
         "test_*.py"
     ],
