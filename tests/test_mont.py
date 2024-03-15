@@ -1,6 +1,7 @@
 import unittest
 import json
 
+import tqdm
 from sage.all import EllipticCurve, proof, GF, kronecker_symbol
 # from random import randint
 # from sage.all import *
@@ -33,7 +34,7 @@ def get_sage_montgomery_curve(sage_Fp, a: int):
     return EllipticCurve(sage_Fp, [0, a, 0, 1, 0])
 
 
-def get_affine_from_projective(A: list) -> int:
+def get_affine_from_projective(A: tuple) -> int:
     """Given A = (Ax: Az), Az!= 0, compute a = Ax * Az^(-1)
 
     Args:
@@ -45,6 +46,13 @@ def get_affine_from_projective(A: list) -> int:
 
     a = Ax * Az ** (-1)
     return int(a.get_int_value())
+
+def load_supersingular_coefficients(prime_name='p1024-CTIDH') -> list:
+    coeffs = []
+    with open(f'tests/data/supersingular_coeff/{prime_name}', 'r') as file:
+        for a in file:
+            coeffs.append(int(a))
+    return coeffs
 
 
 # TODO: Create benchmarks (currently these benchmarks with tests are not accurate)
@@ -199,3 +207,34 @@ class TestMontgomeryCurve(unittest.TestCase):
             field.show_runtime(
                 label="{} {} xmul_Ladder + elligator".format(prime_name, num_curve * num_point)
             )
+
+
+    def test_issupersingular_original(self, num_randcurve=20):
+        print('Testing is_supersingular_original:')
+        for field, sage_Fp, MontCurve, prime_name, L in [
+            (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
+            # (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
+        ]:
+            def test_one_curve(a=field(0), is_Ea_supersingular=False):
+                # A = (a, field(1))
+                u = field.get_random()
+                A = (a*u, u)
+                sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
+                sage_is_supersingular = sage_EC.is_supersingular(proof=False)
+                if is_Ea_supersingular:
+                    self.assertEqual(sage_is_supersingular, True)
+
+                self.assertEqual(MontCurve.issupersingular_original(A), sage_is_supersingular)
+            
+            test_one_curve(a=field(0))
+            for _ in range(num_randcurve - 1):
+                while True:
+                    a = field.get_random()
+                    if a != 2 and a != -2: # ensure the curve is non-singular
+                        break
+                test_one_curve(a)
+            
+            supersingular_coeffs = load_supersingular_coefficients(prime_name)
+            for a in supersingular_coeffs:
+                print(f'a = {a}')
+                test_one_curve(field(a), True)

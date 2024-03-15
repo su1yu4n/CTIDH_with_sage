@@ -1,7 +1,8 @@
 import numpy
+from sage.all import sqrt
+from copy import deepcopy
 from .primefield import PrimeField
 from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read_SDAC_info
-
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
 
@@ -137,6 +138,8 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
 
     def xA24(A: tuple) -> tuple:
         Ax, Az = A
+        if Az == 1: # save two addtion in this case. 
+            return (Ax + 2, 4)
         two_Az = Az + Az
         return (Ax + two_Az, two_Az + two_Az)
 
@@ -278,8 +281,53 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
     # TODO: Add more useful things such as PRAC, eucild2d, cofactor_multiples, crisscross...
     # Read papers and see sibc...
 
-    # TODO: Decide whether these verification algorithms should use A24 or affine A
-    def issupersingular_origin(A: tuple):
+
+    def issupersingular_original(A: tuple):
+        def order_rec(A24: tuple, Q: tuple, lower:int, upper:int, order:int):
+            # print(f'Calling order_rec with lower = {lower}, upper = {upper}')
+            if upper - lower == 1:
+                if Q[1] == 0:
+                    return order
+                
+                if not criticaltestdone:
+                    Q = xmul_public(Q, A24, lower) # scalarmult by l_upper
+                    if Q[1] == 0:
+                        return L[lower] * order
+                    else: # (p+1) * P != O, not supersingular!
+                        return 0
+            
+            mid = lower + (upper - lower + 1) // 2
+
+            Left = deepcopy(Q)
+            for i in range(lower, mid):
+                Left = xmul_public(Left, A24, i)
+
+            order = order_rec(A24, Left, mid, upper, order)
+            if order > int(4 * sqrt(p)):
+                return order
+            
+            Right = deepcopy(Q)
+            for i in range(mid, upper):
+                Right = xmul_public(Right, A24, i)
+
+            order = order_rec(A24, Right, lower, mid, order)    
+            return order
+        
+        A24 = xA24(A)
+        u = field.get_random()
+        P = (u, 1); P = xdbl(P, A24); P = xdbl(P, A24)
+        criticaltestdone = False # global wrt order_rec
+
+        order = order_rec(A24, P, 0, n, 1)
+
+        if order == 0:
+            return False
+        elif order > int(4 * sqrt(p)):
+            return True
+        else:
+            print('Original validation algorithm failed. This should almost never happen. Retry now.')
+            issupersingular_original(A)
+
         raise NotImplementedError
 
     def issupersingular_doliskani(A: tuple):
@@ -292,7 +340,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         raise NotImplementedError
 
     validation_options = {
-        "origin": issupersingular_origin,
+        "origin": issupersingular_original,
         "doliskani": issupersingular_doliskani,
         "pairing1": issupersingular_pairing1,
         "pairing2": issupersingular_pairing2,
