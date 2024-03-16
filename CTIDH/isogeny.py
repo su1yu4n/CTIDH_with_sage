@@ -64,8 +64,16 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
             # An extra global variable which is used in xisog and xeval
             self.XZJ4 = None
+            self.XZj_add = None
+            self.XZj_sub = None
             self.ADD_SQUARED = None
             self.SUB_SQUARED = None
+            self.XZk_add = None
+            self.XZk_sub = None
+            self.XZ_add = None
+            self.XZ_sub = None
+            self.XZ2 = None
+            self.CX2Z2 = None
 
             self.SCALED_MULTIEVALUATION = scaled
             self.tuned = tuned
@@ -282,7 +290,57 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
         # TODO: Implement these velusqrt algorithms
         def kps_s(self, P: tuple, A: tuple, i: int):
-            raise NotImplementedError
+            # Computing [j]P for each j in {1, 3, ..., 2*sJ - 1}
+            self.J = [[0, 0]] * self.sJ
+            self.J[0] = list(P)  
+            P2 = self.mont.xdbl(P, A) 
+            self.J[1] = self.curve.xadd(P2, self.J[0], self.J[0])  
+            for jj in range(2, self.sJ, 1):
+                self.J[jj] = self.curve.xadd(
+                    self.J[jj - 1], P2, self.J[jj - 2]
+                ) 
+            # -------------------------------------------------------
+            # Computing [i]P for i in { (2*sJ) * (2i + 1) : 0 <= i < sI}
+            bhalf_floor = self.sJ // 2
+            bhalf_ceil = self.sJ - bhalf_floor
+            P4 = self.curve.xdbl(P2, A)  
+            P2[0], P4[0] = CSWAP(
+                P2[0], P4[0], self.sJ % 2
+            ) 
+            P2[1], P4[1] = CSWAP(
+                P2[1], P4[1], self.sJ % 2
+            ) 
+            Q = self.curve.xadd(
+                self.J[bhalf_ceil], self.J[bhalf_floor - 1], P2
+            )  
+            P2[0], P4[0] = CSWAP(
+                P2[0], P4[0], self.sJ % 2
+            )  
+            P2[1], P4[1] = CSWAP(
+                P2[1], P4[1], self.sJ % 2
+            ) 
+            
+            I = [[0, 0]] * self.sI
+            I[0] = list(Q)  
+            Q2 = self.curve.xdbl(Q, A)  
+            I[1] = self.curve.xadd(Q2, I[0], I[0]) 
+            for ii in range(2, self.sI, 1):
+                I[ii] = self.curve.xadd(I[ii - 1], Q2, I[ii - 2])  
+                
+             # --------------------------------------------------------------
+            # Computing [k]P for k in { 4*sJ*sI + 1, ..., l - 6, l - 4, l - 2}
+            self.K = [[0, 0]] * self.sK
+
+            if self.sK >= 1:
+                self.K[0] = list(P2) 
+            if self.sK >= 2:
+                self.K[1] = list(P4) 
+
+            for k in range(2, self.sK, 1):
+                self.K[k] = self.curve.xadd(self.K[k - 1], P2, self.K[k - 2])
+            
+            return None
+            
         
         def xisog_s(self, A, i):
             raise NotImplementedError
