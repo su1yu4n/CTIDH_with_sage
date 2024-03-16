@@ -439,8 +439,88 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             return Am
         
         def xeval_s(self, P, A24):
-        
-            raise NotImplementedError
+                
+            B = 4*A24[0] - A24[1]
+            C = A24[1]
+            
+            EJ_0 = [[0, 0, 0] for j in range(0, self.sJ, 1)]
+            for j in range(0, self.sJ, 1):
+                t1 = (self.XZ_sub * self.XZj_add[j])
+                t2 = (self.XZ_add * self.XZj_sub[j])  
+                quadratic = C*((t1 - t2) ** 2)
+                constant = C*((t1 + t2) ** 2)  
+                linear = 2*(self.CX2Z2 * self.XZJ4[j]) - (C * self.XZ2 * (2 * ((self.XZj_add[j])**2) + (self.XZJ4[j]))) + (B * self.XZ2 * self.XZJ4[j])
+                
+                EJ_0[j] = [constant, linear, quadratic]
+            
+            poly_EJ_0 = self.poly_mul.product_tree(EJ_0, self.sJ)[
+                'poly'
+            ]  
+            poly_EJ_1 = list(
+                poly_EJ_0[::-1]
+            ) 
+            
+            # Approach using scaled remainder trees
+            if self.ptree_hI != None:
+                poly_EJ_0 = self.poly_redc.poly_redc(
+                    poly_EJ_0, 2 * self.sJ + 1, self.ptree_hI
+                )
+                fg_0 = self.poly_mul.poly_mul_middle(
+                    self.ptree_hI['scaled'], self.sI, poly_EJ_0[::-1], self.sI
+                )
+                remainders_EJ_0 = self.poly_redc.multieval_scaled(
+                    fg_0[::-1],
+                    self.sI,
+                    [1] + [0] * (self.sI - 1),
+                    self.sI,
+                    self.ptree_hI,
+                    self.sI,
+                )
+
+                poly_EJ_1 = self.poly_redc.poly_redc(
+                    poly_EJ_1, 2 * self.sJ + 1, self.ptree_hI
+                )
+                fg_1 = self.poly_mul.poly_mul_middle(
+                    self.ptree_hI['scaled'], self.sI, poly_EJ_1[::-1], self.sI
+                )
+                remainders_EJ_1 = self.poly_redc.multieval_scaled(
+                    fg_1[::-1],
+                    self.sI,
+                    [1] + [0] * (self.sI - 1),
+                    self.sI,
+                    self.ptree_hI,
+                    self.sI,
+                )
+            else:
+                remainders_EJ_0 = []
+                remainders_EJ_1 = []
+                
+            R_0 = self.poly_mul.product(remainders_EJ_0, self.sI)
+            R_1 = self.poly_mul.product(remainders_EJ_1, self.sI)
+
+            
+            hK_0 = [[0]] * self.sK
+            hK_1 = [[0]] * self.sK
+            for k in range(0, self.sK, 1):
+                t1 = (self.XZ_sub * self.XZk_add[k])  # (X - Z) * (Xk + Zk)
+                t2 = (self.XZ_add * self.XZk_sub[k])  # (X + Z) * (Xk - Zk)
+
+                hK_0[k] = [(t1 - t2)]
+                hK_1[k] = [(t1 + t2)] 
+                
+            M_0 = self.poly_mul.product(
+                hK_0, self.sK
+            )  
+            M_1 = self.poly_mul.product(
+                hK_1, self.sK
+            ) 
+            
+            # $XX \leftarrow ((M_1 \times R_1)^2 \times X_p)$\;
+            # $ZZ \leftarrow ((M_0 \times R_0)^2 \times Z_P)$\;
+            XX = P[0]*(M_1*R_1)**2         
+            ZZ = P[1]*(M_0*R_0)**2
+            
+            return [XX, ZZ]
         
 
     return Formulae
