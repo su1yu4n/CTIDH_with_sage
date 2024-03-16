@@ -200,7 +200,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 self.X2Z2 = P[0]**2 + P[0]**2
                 
             hI = [
-                [(0 - iP[0]), iP[1]] for iP in I
+                [(0 - iP[0]), iP[1]] for iP in self.I
             ]  
             self.ptree_hI = self.poly_mul.product_tree(
                 hI, self.sI
@@ -234,17 +234,15 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                     self.ptree_hI['as'],
                 )
                 
-                A24m = self.xisog_s(self, A24, i)
-                xeval_s(self, P: tuple, A24: tuple)  
+                A_new = self.xisog_s(self, A24, i) 
                 
                 if Tnewlen > 0:
-                    Ts[0] = self.xeval_t(d, d_fake, Xi_Zi_hats, Ts[0])
+                    Ts[0] = self.xeval_s(self, Ts[0], A24)
                 if Tnewlen > 1:
-                    Ts[1] = self.xeval_t(d, d_fake, Xi_Zi_hats, Ts[1])  
+                    Ts[1] = self.xeval_s(self, Ts[1], A24)  
                     
-
-                raise NotImplementedError("matryoshka isogeny of velusqrt not implemented yet!")
-
+                return A_new, Ts
+                
         
         def kps_t(self, d_fake: int, P: tuple, A24: tuple) -> List[tuple]:
             """Timing attack safe kps for traditional velu formula, 
@@ -494,12 +492,10 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             d_0 = B_0*C_1
             d_1 = B_1*C_0
             
-            Am = list()
-            Am[0] = d_0 - d_1
-            Am[1] = 2*(d_0 + d_1)
+            Ax_new = d_0 - d_1
+            Az_new = 2*(d_0 + d_1)
             
-            A24m = self.curve.xA24(Am)
-            return A24m
+            return (Ax_new , Az_new)
         
         def xeval_s(self, P: tuple, A24: tuple) -> tuple:
                 
@@ -565,8 +561,8 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             hK_0 = [[0]] * self.sK
             hK_1 = [[0]] * self.sK
             for k in range(0, self.sK, 1):
-                t1 = (self.XZ_sub * self.XZk_add[k])  # (X - Z) * (Xk + Zk)
-                t2 = (self.XZ_add * self.XZk_sub[k])  # (X + Z) * (Xk - Zk)
+                t1 = (self.XZ_sub * self.XZk_add[k])  
+                t2 = (self.XZ_add * self.XZk_sub[k])  
 
                 hK_0[k] = [(t1 - t2)]
                 hK_1[k] = [(t1 + t2)] 
@@ -578,8 +574,6 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 hK_1, self.sK
             ) 
             
-            # $XX \leftarrow ((M_1 \times R_1)^2 \times X_p)$\;
-            # $ZZ \leftarrow ((M_0 \times R_0)^2 \times Z_P)$\;
             XX = P[0]*(M_1*R_1)**2         
             ZZ = P[1]*(M_0*R_0)**2
             
