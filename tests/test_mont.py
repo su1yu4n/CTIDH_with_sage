@@ -91,9 +91,9 @@ class TestMontgomeryCurve(unittest.TestCase):
                     continue
                 test_one_curve(a)
 
-            field.show_runtime(
-                label="{} {} elligators".format(prime_name, num_curve * num_point)
-            )
+            # field.show_runtime(
+            #     label="{} {} elligators".format(prime_name, num_curve * num_point)
+            # )
 
     # TODO: Check the case when Az is not 1
     def test_xdbl(self, num_curve=20, num_point=5):
@@ -127,9 +127,9 @@ class TestMontgomeryCurve(unittest.TestCase):
                 a = field.get_random()
                 test_one_curve(a)
 
-            field.show_runtime(
-                label="{} {} xdbl + elligator".format(prime_name, num_curve * num_point)
-            )
+            # field.show_runtime(
+            #     label="{} {} xdbl + elligator".format(prime_name, num_curve * num_point)
+            # )
 
     def test_xadd(self, num_curve=20, num_point=5):
         for field, sage_Fp, MontCurve, prime_name in [
@@ -167,9 +167,9 @@ class TestMontgomeryCurve(unittest.TestCase):
                 a = field.get_random()
                 test_one_curve(a)
 
-            field.show_runtime(
-                label="{} {} xadd + elligator".format(prime_name, num_curve * num_point)
-            )
+            # field.show_runtime(
+            #     label="{} {} xadd + elligator".format(prime_name, num_curve * num_point)
+            # )
 
     # TODO: Check the case when Az is not 1
     def test_xmul_Ladder(self, num_curve=20, num_point=5):
@@ -204,13 +204,13 @@ class TestMontgomeryCurve(unittest.TestCase):
                 a = field.get_random()
                 test_one_curve(a)
 
-            field.show_runtime(
-                label="{} {} xmul_Ladder + elligator".format(prime_name, num_curve * num_point)
-            )
+            # field.show_runtime(
+            #     label="{} {} xmul_Ladder + elligator".format(prime_name, num_curve * num_point)
+            # )
 
 
     def test_issupersingular_original(self, num_randcurve=20):
-        print('Testing is_supersingular_original:')
+        # print('Testing is_supersingular_original:')
         for field, sage_Fp, MontCurve, prime_name, L in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
             # (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
@@ -236,5 +236,5 @@ class TestMontgomeryCurve(unittest.TestCase):
             
             supersingular_coeffs = load_supersingular_coefficients(prime_name)
             for a in supersingular_coeffs:
-                print(f'a = {a}')
+                # print(f'a = {a}')
                 test_one_curve(field(a), True)

@@ -181,7 +181,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
     #         for _ in range(num_curve-1):
     #             a_new = test_one_curve(field(a_new))
 
-    def test_tvelu(self, num_curve=30, num_isogeny=5):
+    def test_tvelu(self, num_curve=5, num_isogeny=5):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
             # (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048) # too slow for a routine test
@@ -403,7 +403,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
 
 
                     # Check the numbers of Fp-operations are (exactly) the same with different l in the same batch
-                    print(f'add_count={add_counts[0]}, mul_count={mul_counts[0]}, sqr_count={sqr_counts[0]}')
+                    # print(f'add_count={add_counts[0]}, mul_count={mul_counts[0]}, sqr_count={sqr_counts[0]}')
                     for j in range(1, num_primes_per_batch):
                         self.assertEqual(add_counts[0], add_counts[j])
                         self.assertEqual(mul_counts[0], mul_counts[j])

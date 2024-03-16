@@ -328,7 +328,6 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
             print('Original validation algorithm failed. This should almost never happen. Retry now.')
             issupersingular_original(A)
 
-        raise NotImplementedError
 
     def issupersingular_doliskani(A: tuple):
         raise NotImplementedError

@@ -185,7 +185,7 @@ def PrimeField(p: int):
             NOTE: To achieve timing-safe property, this function pretends to compute the case exponent equals 2**e_maxbitlen
 
             """
-            self.pow_count += 1
+            ZModPrime.pow_count += 1
             
             a = self
             tmp1 = copy.deepcopy(self) # a ** padded_e
