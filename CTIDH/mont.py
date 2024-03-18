@@ -8,7 +8,7 @@ from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read
 
 
 @memoize
-def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
+def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original"):
     if validation not in ["origin", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
@@ -339,7 +339,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         raise NotImplementedError
 
     validation_options = {
-        "origin": issupersingular_original,
+        "original": issupersingular_original,
         "doliskani": issupersingular_doliskani,
         "pairing1": issupersingular_pairing1,
         "pairing2": issupersingular_pairing2,
