@@ -9,7 +9,7 @@ from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read
 
 @memoize
 def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original"):
-    if validation not in ["origin", "doliskani", "pairing1", "pairing2"]:
+    if validation not in ["original", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
     prime_info = read_prime_info(prime_name)
