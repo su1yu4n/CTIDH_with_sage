@@ -175,8 +175,6 @@ class CSIDH:
         todo = [
             abs(e[i]) for i in range(0, n)
         ]  # NOTE: range(0, n) <=> for(i=0;i<n;i++)
-        # TODO: remove print
-        print(f'a = {a}')
 
         while batchtodosum > 0:
             I = []  # 存储当前没做完的batch
@@ -244,13 +242,6 @@ class CSIDH:
                     A24 = self.curve.xA24(A)
                     T0 = CMOV(T0, Tnew[0], maskisogeny)
                     T1 = CMOV(T1, Tnew[1], maskisogeny)
-                    # # TODO: remove print
-                    # if maskisogeny:
-                    #     print(f'After doing {L[J[i]]} - isogeny ({J[i]}-th sop):')
-                    #     print(f'positive_action = {epsilon[i] > 0}')
-                    #     # print(f'A = {A}')
-                    #     a = (A[0] * A[1]**(-1)).get_int_value()
-                    #     print(f'a = {a}')
 
                 # 处理T0和T1：做完小同源之后清掉对应小素数，避免未来重复做
                 if i == 0:

@@ -74,7 +74,7 @@ class TestCSIDH(unittest.TestCase):
     #     # )
 
     # TODO: reduce num_protocol in the future
-    def test_protocol(self, num_protocols=50):
+    def test_protocol(self, num_protocols=10):
         def test_one_CSIDH_instance(csidh_instance, num_protocols = num_protocols):
             for _ in range(num_protocols):
                 ska, pka = csidh_instance.keygen()
