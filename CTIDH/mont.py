@@ -162,8 +162,8 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original")
         ----------------------------------------------------------------------
         """
         XP, ZP = P
-        #TODO: Remove this unnecessary assert
-        assert XP != 0 and ZP != 0
+        # NOTE: in fact XP and ZP can be zero during the protocol
+        # assert XP != 0 and ZP != 0 
 
         V1 = XP + ZP  # line 1 of my pseudo code
         V1 **= 2
@@ -234,8 +234,10 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original")
         ----------------------------------------------------------------------
         """
         XP, ZP = P
-        #TODO: Remove this unnecessary assert
-        assert XP != 0 and ZP != 0
+        # NOTE: in fact XP and ZP can be zero during the protocol
+        # assert XP != 0 and ZP != 0
+        if ZP == 0:
+            return (XP, field(0))
         kbits = binrep(L[j])
         kbitlen = len(kbits)
 
