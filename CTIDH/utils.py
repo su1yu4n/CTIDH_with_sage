@@ -107,8 +107,8 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
     """
     suffix = '_scaled' if scaled else '_unscaled'
 
-    sJ_list = []
     sI_list = []
+    sJ_list = []
 
     steps_info_path = f"data/prime_info/{prime_name}" + suffix
     with open(steps_info_path, 'r') as f:
@@ -122,9 +122,9 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
     #     raise NotImplementedError()
     
     for step in steps:
-        bs, gs = step.split()
-        sJ_list.append(int(bs))
+        gs, bs = step.split()
         sI_list.append(int(gs))
+        sJ_list.append(int(bs))       
 
     return sI_list, sJ_list
 
