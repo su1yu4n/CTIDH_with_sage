@@ -51,6 +51,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             # Global variables to be used in kps, xisog, and xeval
 
             # Here, J is a set of cardinality sJ
+            self.I = None
             self.J = None
             self.sJ = None
 
@@ -183,14 +184,22 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                         c = int(floor((self.L[i] - 1.0) / (4.0 * b)))
                     self.set_parameters_velu(b, c, i)
                 # Now sI, sJ, sK are set.
-                for j in self.J:
+                self.kps_s(self, P, A , i)
+                self.SUB_SQUARED = [0 for j in range(0, self.sJ, 1)]  #
+                self.ADD_SQUARED = [0 for j in range(0, self.sJ, 1)]
+                self.XZJ4 = [0 for j in range(0, self.sJ, 1)]
+                self.XZj_add = [0 for j in range(0, self.sJ, 1)]
+                self.XZj_sub = [0 for j in range(0, self.sJ, 1)]
+                self.XZk_add = [0 for k in range(0, self.sK, 1)]
+                self.XZk_sub = [0 for k in range(0, self.sK, 1)]
+                for j in range(0, self.sJ, 1):
                     self.XZj_add[j] = self.J[j][0] + self.J[j][1]
                     self.XZj_sub[j] = self.J[j][0] - self.J[j][1]
                     self.SUB_SQUARED[j] = self.XZj_add[j]**2
                     self.ADD_SQUARED[j] = self.XZj_add[j]**2
                     self.XZJ4[j] = self.SUB_SQUARED[j] - self.ADD_SQUARED[j]
 
-                for k in self.K:
+                for k in range(0, self.sK, 1):
                     self.XZk_add[k] = self.K[k][0] + self.K[k][1]
                     self.XZk_sub[k] = self.K[k][0] - self.K[k][1]
 
@@ -206,34 +215,45 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 hI, self.sI
             ) 
         
-            if self.sI < (2 * self.sJ - self.sI + 1):
-                (
-                    self.ptree_hI['reciprocal'],
-                    self.ptree_hI['a'],
-                ) = self.poly_redc.reciprocal(
-                    self.ptree_hI['poly'][::-1],
-                    self.sI + 1,
-                    2 * self.sJ - self.sI + 1,
-                )
-                self.ptree_hI['scaled'], self.ptree_hI['as'] = (
-                    list(self.ptree_hI['reciprocal'][: self.sI]),
-                    self.ptree_hI['a'],
-                )
+            if not self.SCALED_MULTIEVALUATION:
+                    # Using scaled remainder trees
+                    self.ptree_hI = self.poly_redc.reciprocal_tree(
+                        {'rpoly': [1], 'rdeg': 0, 'fpoly': [1], 'fdeg': 0, 'a': 1},
+                        2 * self.sJ + 1,
+                        self.ptree_hI,
+                        self.sI,
+                    )  # reciprocal of the root is used to compute sons' reciprocals
 
             else:
-                (
-                    self.ptree_hI['scaled'],
-                    self.ptree_hI['as'],
-                ) = self.poly_redc.reciprocal(
-                    self.ptree_hI['poly'][::-1], self.sI + 1, self.sI
-                )
-                self.ptree_hI['reciprocal'], self.ptree_hI['a'] = (
-                    list(
-                        self.ptree_hI['scaled'][: (2 * self.sJ - self.sI + 1)]
-                    ),
-                    self.ptree_hI['as'],
-                )
-                
+            # Using scaled remainder trees
+                if self.sI < (2 * self.sJ - self.sI + 1) or self.sI == 1:
+                    (
+                        self.ptree_hI['reciprocal'],
+                        self.ptree_hI['a'],
+                    ) = self.poly_redc.reciprocal(
+                        self.ptree_hI['poly'][::-1],
+                        self.sI + 1,
+                        2 * self.sJ - self.sI + 1,
+                    )
+                    self.ptree_hI['scaled'], self.ptree_hI['as'] = (
+                        list(self.ptree_hI['reciprocal'][: self.sI]),
+                        self.ptree_hI['a'],
+                    )
+
+                else:
+                    (
+                        self.ptree_hI['scaled'],
+                        self.ptree_hI['as'],
+                    ) = self.poly_redc.reciprocal(
+                        self.ptree_hI['poly'][::-1], self.sI + 1, self.sI
+                    )
+                    self.ptree_hI['reciprocal'], self.ptree_hI['a'] = (
+                        list(
+                            self.ptree_hI['scaled'][: (2 * self.sJ - self.sI + 1)]
+                        ),
+                        self.ptree_hI['as'],
+                    ) 
+            
                 A_new = self.xisog_s(self, A24, i) 
                 
                 if Tnewlen > 0:
@@ -348,59 +368,76 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
         # TODO: Implement these velusqrt algorithms
         def kps_s(self, P: tuple, A: tuple, i: int) -> None:
-            # Computing [j]P for each j in {1, 3, ..., 2*sJ - 1}
-            self.J = [[0, 0]] * self.sJ
-            self.J[0] = list(P)  
-            P2 = self.mont.xdbl(P, A) 
-            self.J[1] = self.curve.xadd(P2, self.J[0], self.J[0])  
-            for jj in range(2, self.sJ, 1):
-                self.J[jj] = self.curve.xadd(
-                    self.J[jj - 1], P2, self.J[jj - 2]
-                ) 
-            # -------------------------------------------------------
-            # Computing [i]P for i in { (2*sJ) * (2i + 1) : 0 <= i < sI}
-            bhalf_floor = self.sJ // 2
-            bhalf_ceil = self.sJ - bhalf_floor
-            P4 = self.curve.xdbl(P2, A)  
-            P2[0], P4[0] = CSWAP(
-                P2[0], P4[0], self.sJ % 2
-            ) 
-            P2[1], P4[1] = CSWAP(
-                P2[1], P4[1], self.sJ % 2
-            ) 
-            Q = self.curve.xadd(
-                self.J[bhalf_ceil], self.J[bhalf_floor - 1], P2
-            )  
-            P2[0], P4[0] = CSWAP(
-                P2[0], P4[0], self.sJ % 2
-            )  
-            P2[1], P4[1] = CSWAP(
-                P2[1], P4[1], self.sJ % 2
-            ) 
-            
-            I = [[0, 0]] * self.sI
-            I[0] = list(Q)  
-            Q2 = self.curve.xdbl(Q, A)  
-            I[1] = self.curve.xadd(Q2, I[0], I[0]) 
-            for ii in range(2, self.sI, 1):
-                I[ii] = self.curve.xadd(I[ii - 1], Q2, I[ii - 2])  
+            if self.sI == 0:
+                self.J = []
+                self.K = [list(P)]
+                # J, b, ptree_hI, c, K, d
+                assert self.sJ == 0 and self.sI == 0 and self.sK == 1
                 
-             # --------------------------------------------------------------
-            # Computing [k]P for k in { 4*sJ*sI + 1, ..., l - 6, l - 4, l - 2}
-            self.K = [[0, 0]] * self.sK
+            elif self.sI == 1:
+                assert self.sJ == 1
+                P2 = self.curve.xdbl(P, A)
+                self.J = [list(P)]
+                I = [list(P2)]
+                            
+            elif self.sI > 1 :# At this step, sI > 1
+                assert self.sI > 1
+                if self.sJ == 1:
+                    # This branch corresponds with L[i] = 11 and L[i] = 13
+                    Q = self.curve.xdbl(P, A)  # x([2]P)
+                    Q2 = self.curve.xdbl(Q, A)  # x([2]Q)
 
-            if self.sK >= 1:
-                self.K[0] = list(P2) 
-            if self.sK >= 2:
-                self.K[1] = list(P4) 
+                    self.J = [list(P)]
 
-            for k in range(2, self.sK, 1):
-                self.K[k] = self.curve.xadd(self.K[k - 1], P2, self.K[k - 2])
+                    I = [[0, 0]] * self.sI
+                    I[0] = list(Q)  # x(   Q)
+                    I[1] = self.curve.xadd(Q2, I[0], I[0])  # x([3]Q)
+                    for ii in range(2, self.sI, 1):
+                        I[ii] = self.curve.xadd(I[ii - 1], Q2, I[ii - 2])  # x([2**i + 1]Q)
                 
-            assert len(I) == self.sI
-            assert len(self.J) == self.sJ
-            assert len(self.K) == self.sK
-            return None
+                else:
+                    # Computing [j]P for each j in {1, 3, ..., 2*sJ - 1}
+                    self.J = [[0, 0]] * self.sJ
+                    self.J[0] = list(P)  
+                    P2 = self.curve.xdbl(P, A) 
+                    self.J[1] = self.curve.xadd(P2, self.J[0], self.J[0])  
+                    for jj in range(2, self.sJ, 1):
+                        self.J[jj] = self.curve.xadd(
+                            self.J[jj - 1], P2, self.J[jj - 2]
+                        ) 
+                    # -------------------------------------------------------
+                    # Computing [i]P for i in { (2*sJ) * (2i + 1) : 0 <= i < sI}
+                    bhalf_floor = self.sJ // 2
+                    bhalf_ceil = self.sJ - bhalf_floor
+                    P4 = self.curve.xdbl(P2, A)  
+                    Q = self.curve.xadd(
+                    self.J[bhalf_ceil], self.J[bhalf_floor - 1], P4 if self.sJ % 2 else P2
+                    )  
+                    
+                    
+                    self.I = [[0, 0]] * self.sI
+                    self.I[0] = list(Q)  
+                    Q2 = self.curve.xdbl(Q, A)  
+                    self.I[1] = self.curve.xadd(Q2, self.I[0], self.I[0]) 
+                    for ii in range(2, self.sI, 1):
+                        self.I[ii] = self.curve.xadd(self.I[ii - 1], Q2, self.I[ii - 2])  
+                        
+                    # --------------------------------------------------------------
+                    # Computing [k]P for k in { 4*sJ*sI + 1, ..., l - 6, l - 4, l - 2}
+                    self.K = [[0, 0]] * self.sK
+
+                    if self.sK >= 1:
+                        self.K[0] = list(P2) 
+                    if self.sK >= 2:
+                        self.K[1] = list(P4) 
+
+                    for k in range(2, self.sK, 1):
+                        self.K[k] = self.curve.xadd(self.K[k - 1], P2, self.K[k - 2])
+                        
+                    assert len(self.I) == self.sI
+                    assert len(self.J) == self.sJ
+                    assert len(self.K) == self.sK
+                    return None
             
         
         def xisog_s(self, A24: tuple, i: int) -> tuple:
@@ -475,13 +512,21 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             R_1 = self.poly_mul.product(remainders_EJ_1, self.sI)
              
             
+            hK_0 = [
+                [(self.K[k][1] - self.K[k][0])]
+                for k in range(0, self.sK, 1)
+            ]
             M_0 = self.poly_mul.product(
-            self.XZk_sub, self.sK
-            )
-            
+                hK_0, self.sK
+            )  # product of (Zk - Xk) for each k in K
+            # Case alpha = -1
+            hK_1 = [
+                [(self.K[k][1] + self.K[k][0])]
+                for k in range(0, self.sK, 1)
+            ]
             M_1 = self.poly_mul.product(
-            self.XZk_add, self.sK
-            ) 
+                hK_1, self.sK
+            )  # product of (Zk + Xk) for each k in K
             
             B_0 = A24[0]**self.L[i]
             B_1 = (A24[0]- A24[1])**self.L[i]
