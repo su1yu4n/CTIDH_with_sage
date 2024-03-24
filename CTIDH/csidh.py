@@ -124,6 +124,9 @@ class CSIDH:
             raise ValueError(f"the public key: {pk} is not supersingular!")
         return self.group_action(pk, sk)
 
+    # FIXME: Wrong result
+    # FIXME: Do 38 isogenies, while there are only 36 in fact.
+    # it do L[5]=17 and L[14]=53 each once more in an example
     def group_action(self, a: int, e: list) -> int:
         def PointAccept(P, i: int, j: int) -> bool:
             if self.curve.isinfinity(P):
@@ -133,11 +136,13 @@ class CSIDH:
             lmin = L[batch_start[i]]
             l = L[j]
             r %= lmin * (l-1) # now r uniformly distributed in [0, lmin*(l-1) - 1]
+            assert r >= 0
             if r > l * (lmin-1):
                 return False
             return True
 
         def clear_public_prime(T, A24, I: list):
+            T = self.curve.xdbl(T, A24); T = self.curve.xdbl(T, A24)
             for i in range(0, batch_num):
                 if i in I:
                     continue
@@ -170,24 +175,31 @@ class CSIDH:
         todo = [
             abs(e[i]) for i in range(0, n)
         ]  # NOTE: range(0, n) <=> for(i=0;i<n;i++)
+        # TODO: remove print
+        print(f'a = {a}')
 
         while batchtodosum > 0:
             I = []  # 存储当前没做完的batch
-            for i in range(0, batch_num - 1):
+            for i in range(0, batch_num):
                 if batchtodo[i] != 0:
                     I.append(i)  # 将i插入I的尾部
             k = len(I)
 
             # 略：按一种特定的方式打乱I，代码中说是一种优化，但应该对效率没影响
+            # 初始化 CTIDH inner loop的J和epsilon
             J = [
-                batch_start[i] for i in range(0, batch_num)
+                batch_start[I[i]] for i in range(0, k)
             ]  # Ji将存储第Ii个batch中，本次准备做的那个
-            epsilon = [
-                sign(e[batch_start[i]]) for i in range(0, batch_num)
-            ]  # sign(a)==0, -1, 1, if a==0, <0, >0
-            for i in range(0, batch_num):
-                for j in range(batch_start[i], batch_stop[i]):
-                    if todo[i] != 0:
+            epsilon = []  
+            for i in range(0, k):
+                batch_first_index = batch_start[I[i]]
+                eps_i = sign(e[batch_first_index])  # sign(a)==0, -1, 1, if a==0, <0, >0
+                eps_i &= (todo[batch_first_index] != 0)
+                epsilon.append( eps_i ) 
+
+            for i in range(0, k):
+                for j in range(batch_start[I[i]], batch_stop[I[i]]):
+                    if todo[j] != 0:
                         J[i] = j
                         epsilon[i] = sign(e[j])
                         break
@@ -205,8 +217,8 @@ class CSIDH:
 
                 P = deepcopy(T0)
                 # 清理掉当前以外的其他待做素数
-                for j in range(i, k):
-                    self.curve.xmul_private(P, A24, J[j])
+                for j in range(i+1, k):
+                    P = self.curve.xmul_private(P, A24, J[j])
                 fi = PointAccept(P, I[i], J[i])
                 maskisogeny = (fi == 1) and (epsilon[i] != 0)
                 if i == k - 2 and k > 2:  # 正在做倒数第二个batch
@@ -223,8 +235,8 @@ class CSIDH:
                     else:
                         Tnewlen = 2
                     if i == k - 2 and k > 2:  # 倒数第一个同源只需要推一个点
-                        Tnewlen = 1
-
+                        Tnewlen = 1                    
+                    # NOTE: checked: matryoshka_isogeny does not modify the input T0 T1
                     Anew, Tnew = self.isogeny.matryoshka_isogeny(
                         A, Tnew, Tnewlen, P, J[i]
                     )
@@ -232,6 +244,13 @@ class CSIDH:
                     A24 = self.curve.xA24(A)
                     T0 = CMOV(T0, Tnew[0], maskisogeny)
                     T1 = CMOV(T1, Tnew[1], maskisogeny)
+                    # # TODO: remove print
+                    # if maskisogeny:
+                    #     print(f'After doing {L[J[i]]} - isogeny ({J[i]}-th sop):')
+                    #     print(f'positive_action = {epsilon[i] > 0}')
+                    #     # print(f'A = {A}')
+                    #     a = (A[0] * A[1]**(-1)).get_int_value()
+                    #     print(f'a = {a}')
 
                 # 处理T0和T1：做完小同源之后清掉对应小素数，避免未来重复做
                 if i == 0:
@@ -244,7 +263,7 @@ class CSIDH:
                     T0 = self.curve.xmul_private(T0, A24, J[i])
                     T1 = deepcopy(T0)
                 elif i < k - 1:
-                    T0, T1 = CSWAP(T0, T1, epsilon[i] < 0)
+                    T0, T1 = CSWAP(T0, T1, epsilon[i] < 0) # T0, T1换回去
                     T0 = self.curve.xmul_private(T0, A24, J[i])
                     T1 = self.curve.xmul_private(T1, A24, J[i])
 
