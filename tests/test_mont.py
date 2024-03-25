@@ -19,8 +19,6 @@ with open("data/prime_info/p2048_CTIDH", "r") as f:
 p1024 = p1024_info["p"]
 p2048 = p2048_info["p"]
 
-Fp1024 = PrimeField(p1024)
-Fp2048 = PrimeField(p2048)
 
 sage_GFp1024 = GF(p1024)
 sage_GFp2048 = GF(p2048)
@@ -29,6 +27,8 @@ sage_GFp2048 = GF(p2048)
 MontCurve_p1024 = MontgomeryCurve("p1024_CTIDH")
 MontCurve_p2048 = MontgomeryCurve("p2048_CTIDH")
 
+Fp1024 = MontCurve_p1024.field
+Fp2048 = MontCurve_p2048.field
 
 def get_sage_montgomery_curve(sage_Fp, a: int):
     return EllipticCurve(sage_Fp, [0, a, 0, 1, 0])

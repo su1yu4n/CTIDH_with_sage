@@ -14,14 +14,15 @@ p2048_info = read_prime_info("p2048_CTIDH")
 p1024 = p1024_info["p"]
 p2048 = p2048_info["p"]
 
-Fp1024 = PrimeField(p1024)
-Fp2048 = PrimeField(p2048)
 
 sage_GFp1024 = GF(p1024)
 sage_GFp2048 = GF(p2048)
 
 MontCurve_p1024 = MontgomeryCurve("p1024_CTIDH")
 MontCurve_p2048 = MontgomeryCurve("p2048_CTIDH")
+
+Fp1024 = MontCurve_p1024.field
+Fp2048 = MontCurve_p2048.field
 
 isogeny_tvelu_p1024 = MontgomeryIsogeny("tvelu")(MontCurve_p1024)
 isogeny_tvelu_p2048 = MontgomeryIsogeny("tvelu")(MontCurve_p2048)
