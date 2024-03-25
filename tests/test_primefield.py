@@ -244,13 +244,20 @@ class TestPrimeField(unittest.TestCase):
 
 
     def test_is_square_fast(self, num_test=500):
-        # print('Testing p2048:')
-        # err_count = 0
         for _ in range(num_test):
             a = Fp2048.get_random()
-            k = a.kronecker_()
-            sage_k = kronecker_symbol(a.value, p2048)
-            self.assertEqual(k, sage_k)
+            self.assertEqual(a.is_square_fast(), kronecker_symbol(a.value, p2048) == 1)
+
+        for _ in range(num_test):
+            a = Fp1024.get_random()
+            self.assertEqual(a.is_square_fast(), kronecker_symbol(a.value, p1024) == 1)
+        # print('Testing p2048:')
+        # err_count = 0
+        # for _ in range(num_test):
+        #     a = Fp2048.get_random()
+        #     k = a.kronecker_()
+        #     sage_k = kronecker_symbol(a.value, p2048)
+        #     self.assertEqual(k, sage_k)
         #     if k != sage_k:
         #         err_count += 1
         #         print(f'a = {a.get_int_value()}')
@@ -260,11 +267,11 @@ class TestPrimeField(unittest.TestCase):
         
         # print('Testing p1024:')
         # err_count = 0
-        for _ in range(num_test):
-            a = Fp1024.get_random()
-            k = a.kronecker_()
-            sage_k = kronecker_symbol(a.value, p1024)
-            self.assertEqual(k, sage_k)
+        # for _ in range(num_test):
+        #     a = Fp1024.get_random()
+        #     k = a.kronecker_()
+        #     sage_k = kronecker_symbol(a.value, p1024)
+        #     self.assertEqual(k, sage_k)
         #     if k != sage_k:
         #         err_count += 1
         #         print(f'a = {a.get_int_value()}')
