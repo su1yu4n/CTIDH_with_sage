@@ -4,7 +4,7 @@ from sage.rings.finite_rings.integer_mod import IntegerMod_gmp, IntegerMod_int
 from .utils import bitlength, hamming_weight, memoize, CMOV
 
 import copy
-
+from math import ceil
 proof.arithmetic(False)
 
 
@@ -238,21 +238,10 @@ def PrimeField(p: int):
             return True if legendre_symbol == 1 else False
 
         def kronecker_(self, w=64):
-            def get_bits(n):
-                c = 0
-                while n != 0:
-                    n = n // 2
-                    c += 1
-                return c + 1
-            def ceil(a, b):
-                if a % b == 0:
-                    return a // b
-                else:
-                    return a // b + 1
-            def jumpdivsters(n, l, w, theta, f, g):
+            def jumpdivsteps(n, l, w, theta, f, g):
                 assert f % 2 == 1 and f > 0 and l <= (w - 2), "jumpdivsters assertion failure"
                 t = 0
-                for i in range(1, ceil(n, l) + 1):
+                for i in range(1, ceil(n/l) + 1):
                     f_ = f % (2 ** w)
                     g_ = g % (2 ** w)
                     u = 0
@@ -301,8 +290,8 @@ def PrimeField(p: int):
             g = self.get_int_value()
             f = ZModPrime._p
 
-            bits_f = get_bits(f) # 要多算一个符号位，python自带的不算
-            bits_g = get_bits(g) # 要多算一个符号位，python自带的不算
+            bits_f = f.bit_length()
+            bits_g = g.bit_length()
             d = max(bits_f, bits_g)
             n = (45907 * d + 26313) // 19929
             if f == 0:
@@ -321,16 +310,15 @@ def PrimeField(p: int):
                     u = -u
             theta = 0
             l = w - 2
-            theta_, f_, g_, k = jumpdivsters(n, l, w, theta, abs(f), g)
+            theta_, f_, g_, k = jumpdivsteps(n, l, w, theta, abs(f), g)
             if abs(f_) != 1:
                 return 0
             else:
                 return u * k
 
-        def is_square_fast(self, w=64) -> bool:
-            # TODO: Implement this CCS' 23 algorithm.            
-            return True if self.kronecker_(self.get_int_value(), ZModPrime._p) == 1 else False
-            raise NotImplementedError('Fast algorithm not implemented yet!')
+        def is_square_fast(self, w=32) -> bool:        
+            return True if self.kronecker_(w=w) == 1 else False
+            
 
         @classmethod
         def get_random(cls):
