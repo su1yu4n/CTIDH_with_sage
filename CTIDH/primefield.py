@@ -237,8 +237,99 @@ def PrimeField(p: int):
             legendre_symbol = self ** ( (ZModPrime._p - 1) // 2)
             return True if legendre_symbol == 1 else False
 
-        def is_square_fast(self) -> bool:
-            # TODO: Implement this CCS' 23 algorithm.
+        def kronecker_(self, w=64):
+            def get_bits(n):
+                c = 0
+                while n != 0:
+                    n = n // 2
+                    c += 1
+                return c + 1
+            def ceil(a, b):
+                if a % b == 0:
+                    return a // b
+                else:
+                    return a // b + 1
+            def jumpdivsters(n, l, w, theta, f, g):
+                assert f % 2 == 1 and f > 0 and l <= (w - 2), "jumpdivsters assertion failure"
+                t = 0
+                for i in range(1, ceil(n, l) + 1):
+                    f_ = f % (2 ** w)
+                    g_ = g % (2 ** w)
+                    u = 0
+                    a_i, b_i, c_i, d_i = 1, 0, 0, 1
+                    for j in range(1, l + 1):
+                        y = f_
+                        d_0 = theta >= 0
+                        m_1 = g_ % 2
+                        m_0 = d_0 & m_1
+                        t_0 = f_
+                        t_1 = c_i
+                        t_2 = d_i
+                        if d_0 > 0:
+                            t_0 = -t_0
+                            t_1 = -t_1
+                            t_2 = -t_2
+                        if m_1 > 0:
+                            g_ = g_ + t_0
+                            a_i = a_i + t_1
+                            b_i = b_i + t_2
+                        if m_0 > 0:
+                            f_ = f_ + g_
+                            c_i = c_i + a_i
+                            d_i = d_i + b_i
+                        g_ = g_ >> 1
+                        c_i = 2 * c_i
+                        d_i = 2 * d_i
+                        if m_0 > 0:
+                            theta = -theta
+                        elif m_0 == 0:
+                            theta = theta + 1
+                        u += ((y & f_) ^ (f_ >> 1)) & 2
+                        if c_i >= 0:
+                            u += ((u & 1) ^ 0)
+                        else:
+                            u += ((u & 1) ^ 1)
+                    g, f = (a_i * g + b_i * f) >> l, (c_i * g + d_i * f) >> l
+                    t = (t + u) % 4
+                    if f >= 0:
+                        t = t + ((t % 2) ^ 0) % 4
+                    else:
+                        t = t + ((t % 2) ^ 1) % 4
+                t = (t + (t % 2)) % 4
+                return theta, f, g, 1 - t
+            
+            g = self.get_int_value()
+            f = ZModPrime._p
+
+            bits_f = get_bits(f) # 要多算一个符号位，python自带的不算
+            bits_g = get_bits(g) # 要多算一个符号位，python自带的不算
+            d = max(bits_f, bits_g)
+            n = (45907 * d + 26313) // 19929
+            if f == 0:
+                if abs(g) == 1:
+                    return 1
+                else:
+                    return 0
+            u = 1
+            if f < 0 and g < 0:
+                u = -1
+            while f % 2 == 0:
+                f //= 2
+                if g % 2 == 0:
+                    u = 0
+                if (g % 8) == 3 or (g % 8) ==5:
+                    u = -u
+            theta = 0
+            l = w - 2
+            theta_, f_, g_, k = jumpdivsters(n, l, w, theta, abs(f), g)
+            if abs(f_) != 1:
+                return 0
+            else:
+                return u * k
+
+        def is_square_fast(self, w=64) -> bool:
+            # TODO: Implement this CCS' 23 algorithm.            
+            return True if self.kronecker_(self.get_int_value(), ZModPrime._p) == 1 else False
             raise NotImplementedError('Fast algorithm not implemented yet!')
 
         @classmethod
