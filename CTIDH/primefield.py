@@ -9,7 +9,7 @@ proof.arithmetic(False)
 
 
 @memoize
-def PrimeField(p: int):
+def PrimeField(p: int, fast_kronecker=False):
     if not is_prime(p):
         raise ArithmeticError("Cannot construct Fp: p is not a prime!")
 
@@ -237,7 +237,7 @@ def PrimeField(p: int):
             legendre_symbol = self ** ( (ZModPrime._p - 1) // 2)
             return True if legendre_symbol == 1 else False
 
-        def kronecker_(self, w=64):
+        def _kronecker(self, w=32):
             def jumpdivsteps(n, l, w, theta, f, g):
                 assert f % 2 == 1 and f > 0 and l <= (w - 2), "jumpdivsters assertion failure"
                 t = 0
@@ -317,7 +317,10 @@ def PrimeField(p: int):
                 return u * k
 
         def is_square_fast(self, w=32) -> bool:        
-            return True if self.kronecker_(w=w) == 1 else False
+            return True if self._kronecker(w=w) == 1 else False
+        
+        if fast_kronecker:
+            is_square = is_square_fast
             
 
         @classmethod

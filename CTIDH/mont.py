@@ -8,7 +8,7 @@ from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read
 
 
 @memoize
-def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original"):
+def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original", fast_kronecker=False):
     if validation not in ["original", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
@@ -25,7 +25,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original")
     batch_maxdaclen = prime_info["batch_maxdaclen"]
     # batch_bound = prime_info["batch_bound"]
 
-    field = PrimeField(p)
+    field = PrimeField(p, fast_kronecker=fast_kronecker)
 
     type_field = type(field(2))
 

@@ -18,6 +18,7 @@ class CSIDH:
         verbose=True,
         uninitialized=False,
         validation="original",
+        fast_kronecker=False,
     ):
         # Check parameters
         if formula_name not in ["tvelu", "svelu", "hvelu"]:
@@ -33,8 +34,9 @@ class CSIDH:
         self.uninitialized = uninitialized
         self.verbose = verbose
         self.validation = validation
+        self.fast_kronecker = fast_kronecker
 
-        self.curve = MontgomeryCurve(prime_name, SDAC, validation)
+        self.curve = MontgomeryCurve(prime_name, SDAC, validation, fast_kronecker)
         self.isogeny = MontgomeryIsogeny(formula_name, uninitialized)(
             self.curve, self.tuned, self.scaled
         )

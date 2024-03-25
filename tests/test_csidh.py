@@ -16,12 +16,20 @@ class TestCSIDH(unittest.TestCase):
         # )        
         # self.CSIDH_instances.append(CSIDH_1024_tvelu_ladder_original)
 
-        CSIDH_1024_tvelu_SDAC_original = CSIDH(
+        CSIDH_1024_tvelu_SDAC_original_slow_legendre = CSIDH(
             'p1024_CTIDH', 
             'tvelu',
             SDAC=True
         )
-        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original)
+        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
+        
+        CSIDH_1024_tvelu_SDAC_original_fast_kronecker = CSIDH(
+            'p1024_CTIDH', 
+            'tvelu',
+            SDAC=True,
+            fast_kronecker=True
+        )
+        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_fast_kronecker)
 
         # TODO: Add svelu and p2048_CITDH in the future
         return super().setUp()
