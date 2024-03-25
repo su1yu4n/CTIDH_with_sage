@@ -10,11 +10,19 @@ class TestCSIDH(unittest.TestCase):
     CSIDH_instances = []
 
     def setUp(self) -> None:
-        CSIDH_1024_tvelu_ladder_original = CSIDH(
+        # CSIDH_1024_tvelu_ladder_original = CSIDH(
+        #     'p1024_CTIDH', 
+        #     'tvelu',
+        # )        
+        # self.CSIDH_instances.append(CSIDH_1024_tvelu_ladder_original)
+
+        CSIDH_1024_tvelu_SDAC_original = CSIDH(
             'p1024_CTIDH', 
             'tvelu',
+            SDAC=True
         )
-        self.CSIDH_instances.append(CSIDH_1024_tvelu_ladder_original)
+        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original)
+
         # TODO: Add svelu and p2048_CITDH in the future
         return super().setUp()
 
