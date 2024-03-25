@@ -171,7 +171,7 @@ class TestMontgomeryCurve(unittest.TestCase):
             #     label="{} {} xadd + elligator".format(prime_name, num_curve * num_point)
             # )
 
-    # TODO: Check the case when Az is not 1
+
     def test_xmul_Ladder(self, num_curve=20, num_point=5):
         for field, sage_Fp, MontCurve, prime_name, L in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
@@ -181,7 +181,9 @@ class TestMontgomeryCurve(unittest.TestCase):
             field.reset_power_invert_time()
 
             def test_one_curve(a=field(0), num_point=num_point):
-                A = (a, field(1))
+                r = field.get_random()
+                A = (a * r, field(1) * r)
+
                 sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 A24 = (A[0] + 2 * A[1], 4 * A[1])
 
@@ -208,6 +210,75 @@ class TestMontgomeryCurve(unittest.TestCase):
             #     label="{} {} xmul_Ladder + elligator".format(prime_name, num_curve * num_point)
             # )
 
+
+    def test_xmul_SDAC(self, num_curve=20, num_point=10):
+        for field, sage_Fp, MontCurve, prime_name, L in [
+            (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
+            (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
+        ]:
+            field.reset_runtime()
+            field.reset_power_invert_time()
+
+            def test_one_curve(a=field(0), num_point=num_point):
+                r = field.get_random()
+                A = (a * r, field(1) * r)
+
+                sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
+                A24 = (A[0] + 2 * A[1], 4 * A[1])
+
+                for _ in range(num_point):
+                    P, _ = MontCurve.elligator(A)
+                    Px = get_affine_from_projective(P)
+                    sage_P = sage_EC.lift_x(sage_Fp(Px))
+                    sage_Q = sage_P
+                    i = get_randint(0, len(L) - 1)
+                    sage_Q = L[i] * sage_P
+
+                    Q = MontCurve.xmul_SDAC(P, A24, i)
+                    Qx = get_affine_from_projective(Q)
+
+                    self.assertEqual(Qx, sage_Q[0])
+
+            test_one_curve(a=field(0))
+
+            for _ in range(num_curve - 1):
+                a = field.get_random()
+                test_one_curve(a)
+
+
+    def test_xmul_SDAC_safe(self, num_curve=20, num_point=10):
+        for field, sage_Fp, MontCurve, prime_name, L in [
+            (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
+            (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
+        ]:
+            field.reset_runtime()
+            field.reset_power_invert_time()
+
+            def test_one_curve(a=field(0), num_point=num_point):
+                r = field.get_random()
+                A = (a * r, field(1) * r)
+
+                sage_EC = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
+                A24 = (A[0] + 2 * A[1], 4 * A[1])
+
+                for _ in range(num_point):
+                    P, _ = MontCurve.elligator(A)
+                    Px = get_affine_from_projective(P)
+                    sage_P = sage_EC.lift_x(sage_Fp(Px))
+                    sage_Q = sage_P
+                    i = get_randint(0, len(L) - 1)
+                    sage_Q = L[i] * sage_P
+
+                    Q = MontCurve.xmul_SDAC_safe(P, A24, i)
+                    Qx = get_affine_from_projective(Q)
+
+                    self.assertEqual(Qx, sage_Q[0])
+
+            test_one_curve(a=field(0))
+
+            for _ in range(num_curve - 1):
+                a = field.get_random()
+                test_one_curve(a)
 
     def test_issupersingular_original(self, num_randcurve=20):
         # print('Testing is_supersingular_original:')

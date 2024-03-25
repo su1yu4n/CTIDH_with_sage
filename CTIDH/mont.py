@@ -2,7 +2,7 @@ import numpy
 from sage.all import sqrt
 from copy import deepcopy
 from .primefield import PrimeField
-from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read_SDAC_info
+from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read_SDAC_info, batchnumber_of_Li
 
 # MontgomeryCurve class determines the family of supersingular elliptic curves over GF(p)
 
@@ -260,7 +260,14 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original")
         output: the projective Montgomery x-coordinate point x([L[j]]P)
         ----------------------------------------------------------------------
         """
-        raise NotImplementedError
+        P2 = xdbl(P, A24)
+        R = [P, P2, xadd(P2, P, P)]
+        for sdac in SDACS_REVERSED[j]:
+            if isinfinity(R[sdac]): # if isinfinity(R[sdac]):
+                R[:] = R[sdac ^ 1], R[2], xdbl(R[2], A24)
+            else:
+                R[:] = R[sdac ^ 1], R[2], xadd(R[2], R[sdac ^ 1], R[sdac])
+        return R[2]
 
 
     def xmul_SDAC_safe(P: tuple, A24: tuple, j: int) -> tuple:
@@ -274,8 +281,28 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original")
         output: the projective Montgomery x-coordinate point x([L[j]]P)
         ----------------------------------------------------------------------
         """
-        # NOTE: Use batch_maxdaclen to achieve security.
-        raise NotImplementedError
+        P2 = xdbl(P, A24)
+        R = [P, P2, xadd(P2, P, P)]
+
+        b = batchnumber_of_Li(j, batch_start, batch_stop)
+        maxdac_len = batch_maxdaclen[b]
+        daclen = SDACS_LENGTH[j]
+        SDACS_padded = SDACS_REVERSED[j] + [0] * (maxdac_len - daclen)
+
+        for sdac in SDACS_padded:
+            want = (daclen > 0)
+
+            if isinfinity(R[sdac]):  # if isinfinity(R[sdac]):
+                TMP = [R[sdac ^ 1], R[2], xadd(R[0],R[2],R[1])]
+            else:
+                TMP = [R[sdac ^ 1], R[2], xadd(R[sdac ^ 1],R[2], R[sdac])]
+            
+            R = CMOV(R, TMP, want)
+            # del TMP
+            daclen -= 1
+
+        return R[2]
+
 
     xmul_public = xmul_SDAC if SDAC else xmul_Ladder
     xmul_private = xmul_SDAC_safe if SDAC else xmul_Ladder
