@@ -71,10 +71,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             self.SUB_SQUARED = None
             self.XZk_add = None
             self.XZk_sub = None
-            self.XZ_add = None
-            self.XZ_sub = None
-            self.XZ2 = None
-            self.X2Z2 = None
+    
             
 
             self.SCALED_MULTIEVALUATION = scaled
@@ -172,7 +169,9 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
                 return A_new, Ts
             
-            else:    # Use Velusqrt formulas
+            else: 
+                # Use Velusqrt formulas
+                self.tuned = False
                 if self.tuned:
                     self.set_parameters_velu(self.sJ_list[i], self.sI_list[i], i)
                 else:
@@ -180,12 +179,13 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                         b = 0
                         c = 0
                     else:
+                        print("in")
                         b = int(floor(sqrt(self.L[i] - 1) / 2.0))
                         c = int(floor((self.L[i] - 1.0) / (4.0 * b)))
                     self.set_parameters_velu(b, c, i)
                 # Now sI, sJ, sK are set.
-                self.kps_s(self, P, A , i)
-                self.SUB_SQUARED = [0 for j in range(0, self.sJ, 1)]  #
+                self.kps_s( P, A24 , i)
+                self.SUB_SQUARED = [0 for j in range(0, self.sJ, 1)]  
                 self.ADD_SQUARED = [0 for j in range(0, self.sJ, 1)]
                 self.XZJ4 = [0 for j in range(0, self.sJ, 1)]
                 self.XZj_add = [0 for j in range(0, self.sJ, 1)]
@@ -195,37 +195,34 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                 for j in range(0, self.sJ, 1):
                     self.XZj_add[j] = self.J[j][0] + self.J[j][1]
                     self.XZj_sub[j] = self.J[j][0] - self.J[j][1]
-                    self.SUB_SQUARED[j] = self.XZj_add[j]**2
+                    self.SUB_SQUARED[j] = self.XZj_sub[j]**2
                     self.ADD_SQUARED[j] = self.XZj_add[j]**2
                     self.XZJ4[j] = self.SUB_SQUARED[j] - self.ADD_SQUARED[j]
 
                 for k in range(0, self.sK, 1):
                     self.XZk_add[k] = self.K[k][0] + self.K[k][1]
-                    self.XZk_sub[k] = self.K[k][0] - self.K[k][1]
-
-                self.XZ_add = P[0] + P[1]
-                self.XZ_sub = P[0] + P[1]
-                self.XZ2 = 2 * P[0] * P[1]
-                self.X2Z2 = P[0]**2 + P[0]**2
+                    self.XZk_sub[k] = self.K[k][1] - self.K[k][0]
+                   
                 
-            hI = [
-                [(0 - iP[0]), iP[1]] for iP in self.I
-            ]  
-            self.ptree_hI = self.poly_mul.product_tree(
-                hI, self.sI
-            ) 
-        
-            if not self.SCALED_MULTIEVALUATION:
-                    # Using scaled remainder trees
-                    self.ptree_hI = self.poly_redc.reciprocal_tree(
-                        {'rpoly': [1], 'rdeg': 0, 'fpoly': [1], 'fdeg': 0, 'a': 1},
-                        2 * self.sJ + 1,
-                        self.ptree_hI,
-                        self.sI,
-                    )  # reciprocal of the root is used to compute sons' reciprocals
+                hI = [
+                    
+                    [(0 - iP[0]), iP[1]] for iP in self.I
+                ]  
+                self.ptree_hI = self.poly_mul.product_tree(
+                    hI, self.sI
+                ) 
+            
+                # if not self.SCALED_MULTIEVALUATION:
+                #         # Using scaled remainder trees
+                #         self.ptree_hI = self.poly_redc.reciprocal_tree(
+                #             {'rpoly': [1], 'rdeg': 0, 'fpoly': [1], 'fdeg': 0, 'a': 1},
+                #             2 * self.sJ + 1,
+                #             self.ptree_hI,
+                #             self.sI,
+                #         )  # reciprocal of the root is used to compute sons' reciprocals
 
-            else:
-            # Using scaled remainder trees
+                # else:
+                # Using scaled remainder trees
                 if self.sI < (2 * self.sJ - self.sI + 1) or self.sI == 1:
                     (
                         self.ptree_hI['reciprocal'],
@@ -253,13 +250,13 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                         ),
                         self.ptree_hI['as'],
                     ) 
-            
-                A_new = self.xisog_s(self, A24, i) 
+                
+                A_new = self.xisog_s( A24, i) 
                 
                 if Tnewlen > 0:
-                    Ts[0] = self.xeval_s(self, Ts[0], A24)
+                    Ts[0] = self.xeval_s(Ts[0], A24)
                 if Tnewlen > 1:
-                    Ts[1] = self.xeval_s(self, Ts[1], A24)  
+                    Ts[1] = self.xeval_s(Ts[1], A24)  
                     
                 return A_new, Ts
                 
@@ -361,31 +358,43 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             # At this step, everythin is correct
             self.sJ = b
             self.sI = c
+            print(f"b:{b}")
+            print(f"c:{c}")
             d = ((self.L[i] - 2 - 4 * b * c - 1) // 2) + 1
             assert d >= 0
             self.sK = d
             return None
 
         # TODO: Implement these velusqrt algorithms
-        def kps_s(self, P: tuple, A: tuple, i: int) -> None:
+        def kps_s(self, P: tuple, A24: tuple, i: int) -> None:
             if self.sI == 0:
                 self.J = []
                 self.K = [list(P)]
+                print(f"self.sK:{self.sK}")
+                print(f"self.sK:{self.sI}")
+                print(f"self.sK:{self.sJ}")
+                print(f"self.L[i]:{self.L[i]}")
                 # J, b, ptree_hI, c, K, d
                 assert self.sJ == 0 and self.sI == 0 and self.sK == 1
                 
             elif self.sI == 1:
                 assert self.sJ == 1
-                P2 = self.curve.xdbl(P, A)
+                P2 = self.curve.xdbl(P, A24)
                 self.J = [list(P)]
                 I = [list(P2)]
+                
+                assert self.sK <= 1
+                if self.sK == 1:
+                    self.K = [list(P2)]
+                else:
+                    self.K = []
                             
             elif self.sI > 1 :# At this step, sI > 1
                 assert self.sI > 1
                 if self.sJ == 1:
                     # This branch corresponds with L[i] = 11 and L[i] = 13
-                    Q = self.curve.xdbl(P, A)  # x([2]P)
-                    Q2 = self.curve.xdbl(Q, A)  # x([2]Q)
+                    Q = self.curve.xdbl(P, A24)  # x([2]P)
+                    Q2 = self.curve.xdbl(Q, A24)  # x([2]Q)
 
                     self.J = [list(P)]
 
@@ -399,7 +408,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                     # Computing [j]P for each j in {1, 3, ..., 2*sJ - 1}
                     self.J = [[0, 0]] * self.sJ
                     self.J[0] = list(P)  
-                    P2 = self.curve.xdbl(P, A) 
+                    P2 = self.curve.xdbl(P, A24) 
                     self.J[1] = self.curve.xadd(P2, self.J[0], self.J[0])  
                     for jj in range(2, self.sJ, 1):
                         self.J[jj] = self.curve.xadd(
@@ -409,7 +418,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                     # Computing [i]P for i in { (2*sJ) * (2i + 1) : 0 <= i < sI}
                     bhalf_floor = self.sJ // 2
                     bhalf_ceil = self.sJ - bhalf_floor
-                    P4 = self.curve.xdbl(P2, A)  
+                    P4 = self.curve.xdbl(P2, A24)  
                     Q = self.curve.xadd(
                     self.J[bhalf_ceil], self.J[bhalf_floor - 1], P4 if self.sJ % 2 else P2
                     )  
@@ -417,7 +426,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                     
                     self.I = [[0, 0]] * self.sI
                     self.I[0] = list(Q)  
-                    Q2 = self.curve.xdbl(Q, A)  
+                    Q2 = self.curve.xdbl(Q, A24)  
                     self.I[1] = self.curve.xadd(Q2, self.I[0], self.I[0]) 
                     for ii in range(2, self.sI, 1):
                         self.I[ii] = self.curve.xadd(self.I[ii - 1], Q2, self.I[ii - 2])  
@@ -434,14 +443,16 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
                     for k in range(2, self.sK, 1):
                         self.K[k] = self.curve.xadd(self.K[k - 1], P2, self.K[k - 2])
                         
-                    assert len(self.I) == self.sI
-                    assert len(self.J) == self.sJ
-                    assert len(self.K) == self.sK
-                    return None
+            assert len(self.I) == self.sI
+            assert len(self.J) == self.sJ
+            assert len(self.K) == self.sK
+            assert self.sI >= self.sJ
+            assert self.sK >= 0
+            return None
             
         
         def xisog_s(self, A24: tuple, i: int) -> tuple:
-            B = 4*A24[0] - A24[1]
+            B = 2*(2*A24[0] - A24[1])
             C = A24[1]
             
             EJ_0 = [[0, 0, 0] for j in range(0, self.sJ, 1)]
@@ -513,7 +524,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
              
             
             hK_0 = [
-                [(self.K[k][1] - self.K[k][0])]
+                [self.XZk_sub[k]]
                 for k in range(0, self.sK, 1)
             ]
             M_0 = self.poly_mul.product(
@@ -521,7 +532,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             )  # product of (Zk - Xk) for each k in K
             # Case alpha = -1
             hK_1 = [
-                [(self.K[k][1] + self.K[k][0])]
+                [self.XZk_add[k]]
                 for k in range(0, self.sK, 1)
             ]
             M_1 = self.poly_mul.product(
@@ -537,26 +548,34 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             d_0 = B_0*C_1
             d_1 = B_1*C_0
             
-            Ax_new = d_0 - d_1
-            Az_new = 2*(d_0 + d_1)
+            Az_new = d_0 - d_1
+            Ax_new = 2*(d_0 + d_1)
             
             return (Ax_new , Az_new)
         
         def xeval_s(self, P: tuple, A24: tuple) -> tuple:
                 
-            B = 4*A24[0] - A24[1]
+            B = 2*(2*A24[0] - A24[1])
             C = A24[1]
             
-            EJ_0 = [[0, 0, 0] for j in range(0, self.sJ, 1)]
+            XZ_add = P[0] + P[1]
+            XZ_sub= P[0] - P[1]
+            XZ2 = 2 * P[0] * P[1]
+            X2Z2 = P[0]**2 + P[1]**2
+            
+            EJ_0 = [[0, 0, 0] for j in range(0, self.sJ , 1)]
             for j in range(0, self.sJ, 1):
-                t1 = (self.XZ_sub * self.XZj_add[j])
-                t2 = (self.XZ_add * self.XZj_sub[j])  
+                t1 = (XZ_sub* self.XZj_add[j])
+                t2 = (XZ_add * self.XZj_sub[j])
+                # print(f"t1:{t1} t2:{t2}")  
                 quadratic = C*((t1 - t2) ** 2)
                 constant = C*((t1 + t2) ** 2)  
-                linear = 2*((C*self.X2Z2 * self.XZJ4[j]) - (C * self.XZ2 * (2 * ((self.XZj_add[j])**2) + (self.XZJ4[j]))) + (B * self.XZ2 * self.XZJ4[j]))
-                
+                linear = 2*((C*X2Z2 * self.XZJ4[j]) - (C * XZ2 *( 2*(self.XZj_add[j])**2 + self.XZJ4[j])) + (B * XZ2 * self.XZJ4[j]))
+                # print(f"qua:{quadratic}")
+                # print(f"con :{constant}")
+                # print(f"linear:{linear}")
                 EJ_0[j] = [constant, linear, quadratic]
-            
+                
             poly_EJ_0 = self.poly_mul.product_tree(EJ_0, self.sJ)[
                 'poly'
             ]  
@@ -598,19 +617,21 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             else:
                 remainders_EJ_0 = []
                 remainders_EJ_1 = []
+                # print("*********")
                 
             R_0 = self.poly_mul.product(remainders_EJ_0, self.sI)
             R_1 = self.poly_mul.product(remainders_EJ_1, self.sI)
 
-            
+            # print("PPP",R_0)
+            # print(R_1)
             hK_0 = [[0]] * self.sK
             hK_1 = [[0]] * self.sK
             for k in range(0, self.sK, 1):
-                t1 = (self.XZ_sub * self.XZk_add[k])  
-                t2 = (self.XZ_add * self.XZk_sub[k])  
+                t1 = (XZ_sub* self.XZk_add[k])  
+                t2 = (XZ_add * self.XZk_sub[k])  
 
-                hK_0[k] = [(t1 - t2)]
-                hK_1[k] = [(t1 + t2)] 
+                hK_0[k] = [(t1 + t2)]
+                hK_1[k] = [(t1 - t2)] 
                 
             M_0 = self.poly_mul.product(
                 hK_0, self.sK
@@ -618,9 +639,10 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             M_1 = self.poly_mul.product(
                 hK_1, self.sK
             ) 
-            
-            XX = P[0]*(M_1*R_1)**2         
-            ZZ = P[1]*(M_0*R_0)**2
+            print(M_0)
+            print(M_1)
+            XX = P[0]*((M_1*R_1)**2)         
+            ZZ = P[1]*((M_0*R_0)**2)
             
             return [XX, ZZ]
         
