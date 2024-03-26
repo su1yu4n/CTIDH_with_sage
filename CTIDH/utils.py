@@ -4,13 +4,19 @@ import time
 from functools import reduce
 import copy
 
+import numpy as np
 # Dictionary which provides attribute access to its keys.
 class attrdict(dict):
     __getattr__ = dict.__getitem__
 
 
-def sign(x):
-    return (1, -1)[x < 0]  # Sign of an integer
+def sign(a: int) -> int:
+    """sign(a) == 0 if a==0 , 1 if a>0, -1 if a<0.
+
+    Args:
+        a (int): _description_
+    """
+    return int(np.sign(a))
 
 isequal = {True: 1, False: 0}  # Simulating constant-time integer comparison
 
@@ -85,6 +91,11 @@ def read_prime_info(prime_name="p2048_CTIDH"):
         return json.load(f)
 
 
+def read_prime_info_for_tvelu_test(prime_name="p2048_CTIDH"):
+    with open(f"data/prime_info/for_tvelu_test/{prime_name}") as f:
+        return json.load(f)
+
+
 def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
     """
     Args:
@@ -96,8 +107,8 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
     """
     suffix = '_scaled' if scaled else '_unscaled'
 
-    sJ_list = []
     sI_list = []
+    sJ_list = []
 
     steps_info_path = f"data/prime_info/{prime_name}" + suffix
     with open(steps_info_path, 'r') as f:
@@ -111,9 +122,9 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
     #     raise NotImplementedError()
     
     for step in steps:
-        bs, gs = step.split()
-        sJ_list.append(int(bs))
+        gs, bs = step.split()
         sI_list.append(int(gs))
+        sJ_list.append(int(bs))       
 
     return sI_list, sJ_list
 

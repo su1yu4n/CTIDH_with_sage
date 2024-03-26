@@ -8,8 +8,8 @@ from .utils import read_prime_info, attrdict, CMOV, CSWAP, memoize, binrep, read
 
 
 @memoize
-def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
-    if validation not in ["origin", "doliskani", "pairing1", "pairing2"]:
+def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original"):
+    if validation not in ["original", "doliskani", "pairing1", "pairing2"]:
         raise ValueError
 
     prime_info = read_prime_info(prime_name)
@@ -162,8 +162,8 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         ----------------------------------------------------------------------
         """
         XP, ZP = P
-        #TODO: Remove this unnecessary assert
-        assert XP != 0 and ZP != 0
+        # NOTE: in fact XP and ZP can be zero during the protocol
+        # assert XP != 0 and ZP != 0 
 
         V1 = XP + ZP  # line 1 of my pseudo code
         V1 **= 2
@@ -234,8 +234,10 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         ----------------------------------------------------------------------
         """
         XP, ZP = P
-        #TODO: Remove this unnecessary assert
-        assert XP != 0 and ZP != 0
+        # NOTE: in fact XP and ZP can be zero during the protocol
+        # assert XP != 0 and ZP != 0
+        if ZP == 0:
+            return (XP, field(0))
         kbits = binrep(L[j])
         kbitlen = len(kbits)
 
@@ -339,7 +341,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="origin"):
         raise NotImplementedError
 
     validation_options = {
-        "origin": issupersingular_original,
+        "original": issupersingular_original,
         "doliskani": issupersingular_doliskani,
         "pairing1": issupersingular_pairing1,
         "pairing2": issupersingular_pairing2,
