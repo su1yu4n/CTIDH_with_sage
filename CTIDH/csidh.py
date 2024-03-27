@@ -126,10 +126,8 @@ class CSIDH:
             raise ValueError(f"the public key: {pk} is not supersingular!")
         return self.group_action(pk, sk)
 
-    # FIXME: Wrong result
-    # FIXME: Do 38 isogenies, while there are only 36 in fact.
-    # it do L[5]=17 and L[14]=53 each once more in an example
-    def group_action(self, a: int, e: list) -> int:
+
+    def group_action(self, a: int, e: list, debug=False) -> int:
         def PointAccept(P, i: int, j: int) -> bool:
             if self.curve.isinfinity(P):
                 return False
@@ -192,9 +190,10 @@ class CSIDH:
             ]  # Ji将存储第Ii个batch中，本次准备做的那个
             epsilon = []  
             for i in range(0, k):
-                batch_first_index = batch_start[I[i]]
-                eps_i = sign(e[batch_first_index])  # sign(a)==0, -1, 1, if a==0, <0, >0
-                eps_i &= (todo[batch_first_index] != 0)
+                j = batch_start[I[i]]
+                eps_i = 0
+                # sign(a)==0, -1, 1, if a==0, <0, >0
+                eps_i = CMOV(eps_i, sign(e[j]), todo[j] != 0)
                 epsilon.append( eps_i ) 
 
             for i in range(0, k):
@@ -205,10 +204,16 @@ class CSIDH:
                         break
                     # NOTE: these should be implemented in constant-time.
                     # eg. use masking technique to avoid break
-
+            
+            if debug:
+                print(f'I = {I}')
+                print(f'J = {J}\n')
             # "CTIDH inner loop"
             T0, T1 = self.curve.elligator(A)
             for i in range(0, k):
+                if debug:
+                    print(f'Doing batch {I[i]}, index = {J[i]}, prime = {L[J[i]]}')
+
                 T0, T1 = CSWAP(T0, T1, epsilon[i] < 0)
                 if i == 0:
                     # T0 = [r]T0
@@ -221,6 +226,11 @@ class CSIDH:
                     P = self.curve.xmul_private(P, A24, J[j])
                 fi = PointAccept(P, I[i], J[i])
                 maskisogeny = (fi == 1) and (epsilon[i] != 0)
+
+                if debug:
+                    # print(f'Accept the point?: {fi}')
+                    print(f'Will do this isogeny? {maskisogeny}')
+
                 if i == k - 2 and k > 2:  # 正在做倒数第二个batch
                     T0 = CMOV(T0, T1, (epsilon[i + 1] < 0) ^ (epsilon[i] < 0))
 
@@ -245,6 +255,10 @@ class CSIDH:
                     T0 = CMOV(T0, Tnew[0], maskisogeny)
                     T1 = CMOV(T1, Tnew[1], maskisogeny)
 
+                if debug:
+                    a = A[0] * A[1] ** (-1)
+                    print(f'After that, a={a}')
+
                 # 处理T0和T1：做完小同源之后清掉对应小素数，避免未来重复做
                 if i == 0:
                     # 第一个小同源做完要出一个新的点，保证T0和T1相互独立
@@ -261,7 +275,7 @@ class CSIDH:
                     T1 = self.curve.xmul_private(T1, A24, J[i])
 
                 # NOTE: 实际中为了安全会用j扫一遍I[i]这个batch，右值改为 maskisogeny & (J[i] == j)
-                todo[J[i]] -= fi
+                todo[J[i]] -= maskisogeny
                 batchtodo[I[i]] -= fi
                 batchtodosum -= fi
 
