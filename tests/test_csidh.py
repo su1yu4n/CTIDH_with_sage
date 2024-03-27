@@ -1,12 +1,71 @@
 import unittest
 
 import numpy as np
+from sage.all import EllipticCurve, proof, is_prime, GF
 
 from CTIDH.csidh import CSIDH
+    
+
+proof.arithmetic(False)
+
+
+def isogeny_sage(E, p, l, inverse_action):
+    def sample_l_order_point(E, l):
+        P = E(0)
+        while P == E(0):
+            R = E.random_point()
+            order_E = p + 1
+            P = (order_E // l) * R
+
+        assert l * P == E(0) and P != E(0)
+        return P
+    if inverse_action == True:
+        a = E.a2()
+        E = EllipticCurve(E.base_field(), [0, -a, 0, 1, 0])
+    P = sample_l_order_point(E, l)
+    if l > 200:
+        phi = E.isogeny(kernel=P, model="montgomery", algorithm="velusqrt")
+    else:
+        phi = E.isogeny(kernel=P, model="montgomery")
+    E_new = phi.codomain()
+
+    if inverse_action == True:
+        a_new = E_new.a2()
+        E_new = EllipticCurve(E.base_field(), [0, -a_new, 0, 1, 0])
+
+    return E_new
+
+
+def group_action_sage(sk: list, L: list, E, p):
+    def do_l_e_action(l, e, E):
+        if e == 0:
+            return E
+
+        inverse_action = True if e < 0 else False
+        e = abs(e)
+        for _ in range(e):
+            E = isogeny_sage(E, p, l, inverse_action)
+        return E
+
+    assert len(sk) == len(L)
+    E_a = E
+    for i in range(len(sk)):
+        e_i = sk[i]
+        l_i = L[i]
+        E_a = do_l_e_action(l_i, e_i, E_a)
+
+    return E_a
+
+def pkgen_sage(sk: list, prime_info: dict):
+    p = prime_info["p"]
+    L = prime_info["L"]
+    assert is_prime(p)
+    E0 = EllipticCurve(GF(p), [0, 0, 0, 1, 0])
+    pk = group_action_sage(sk, L, E0, p)
+    return pk.a2()
+
 
 class TestCSIDH(unittest.TestCase):
-    """Showcase for a test with setUp and tearDown methods"""
-
     CSIDH_instances = []
 
     def setUp(self) -> None:
@@ -16,12 +75,12 @@ class TestCSIDH(unittest.TestCase):
         # )        
         # self.CSIDH_instances.append(CSIDH_1024_tvelu_ladder_original)
 
-        CSIDH_1024_tvelu_SDAC_original_slow_legendre = CSIDH(
-            'p1024_CTIDH', 
-            'tvelu',
-            SDAC=True
-        )
-        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
+        # CSIDH_1024_tvelu_SDAC_original_slow_legendre = CSIDH(
+        #     'p1024_CTIDH', 
+        #     'tvelu',
+        #     SDAC=True
+        # )
+        # self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
         
         CSIDH_1024_tvelu_SDAC_original_fast_kronecker = CSIDH(
             'p1024_CTIDH', 
@@ -59,37 +118,36 @@ class TestCSIDH(unittest.TestCase):
         for instance in self.CSIDH_instances:
             test_one_CSIDH_instance(instance)
 
-    # TODO: test the correctness of group action
-    """
-    NOTE: Currently, there's no reliable data... the output of sibc seems doubtful.
-        I wrote a simple CSIDH version, which doesn't push points, just calculate coeffs. I think it is reliable.
-        This implementation's output is the same as that simple version.
-        But in the following example, original CTIDH's code has output different from both sibc's and mine..
-    """
-    # def test_group_action(self, num_sk=10):
-    #     # def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk):
-    #     #     for _ in range(num_sk):
-    #     #         sk = csidh_instance.skgen()
-    #     #         print(f'sk = {sk}')
-    #     # for instance in self.CSIDH_instances:
-    #     #     test_one_CSIDH_instance(instance)
-    #     ska = [-2, 0, 0, 0, -4, -1, -1, 1, 0, 1, -2, 1, 0, 2, 1, 2, 0, 0, 0, 2, 1, 0, 1, 0, 0, 4, 0, 3, 0, 0, 0, -1, 0, 2, -1, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    #     instance = self.CSIDH_instances[0] # tvelu p1024
-    #     a = instance.group_action(0, ska)
-    #     print(f'a = {hex(a)}')
 
-    #     skb = [0, 0, 3, 0, -1, 0, 0, 2, 0, 0, 0, 0, 3, -1, 0, -2, -2, 1, 0, -1, 0, 1, 0, 2, 3, 0, 0, -1, -1, 0, 0, -1, 0, -1, -1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    #     b = instance.group_action(0, skb)
-    #     print(f'b = {hex(b)}')
+    def test_group_action(self, num_sk=10):
+        def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk):
+            prime_info = csidh_instance.prime_info
+            p = prime_info["p"]
+            L = prime_info["L"]
 
-    #     # Is sibc's output correct?????
-    #     # This result is very doubtful...
-    #     # self.assertEqual(
-    #     #     a, 
-    #     #     0x947e58d0c56c30adf6edd66169bac9ec437e05477a07a67140fd0091796a792d8b282ef489f6f11d17e97a7833813918b79c6773590362eea54b79955568eda09d6f16b4004bb5ac3e2089c1a6e949b1c529b04edf1b4ea257b9a7a099d576074126dab11262c3469f76444c15a6a05264f954d319cad287975b988331bc964
-    #     # )
+            def test_one_action(a=0):
+                print(f'a={a}')
+                sk = csidh_instance.skgen()
+                print(f'sk = {sk}')
+                anew = csidh_instance.group_action(a, sk, debug=False)
 
-    # TODO: reduce num_protocol in the future
+                Ea = EllipticCurve(GF(p), [0, a, 0, 1, 0])
+                Enew_sage = group_action_sage(sk, L, Ea, p)
+                anew_sage = Enew_sage.a2()
+                print(f'anew={anew}')
+                print(f'anew_sage={anew_sage}\n')
+                self.assertEqual(anew, anew_sage)
+                return anew
+
+            for _ in range(num_sk // 2):
+                anew = test_one_action(a=0)
+                test_one_action(a=anew)
+                
+                
+        for instance in self.CSIDH_instances:
+            test_one_CSIDH_instance(instance)
+
+
     def test_protocol(self, num_protocols=10):
         def test_one_CSIDH_instance(csidh_instance, num_protocols = num_protocols):
             for _ in range(num_protocols):
