@@ -211,7 +211,7 @@ class TestMontgomeryCurve(unittest.TestCase):
             # )
 
 
-    def test_xmul_SDAC(self, num_curve=20, num_point=10):
+    def test_xmul_SDAC_public(self, num_curve=50, num_point=30):
         for field, sage_Fp, MontCurve, prime_name, L in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
             (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
@@ -233,8 +233,11 @@ class TestMontgomeryCurve(unittest.TestCase):
                     sage_Q = sage_P
                     i = get_randint(0, len(L) - 1)
                     sage_Q = L[i] * sage_P
-
-                    Q = MontCurve.xmul_SDAC(P, A24, i)
+                    """
+                    NOTE: if P is a l-torsion point where l<L[i], then Q != sage_Q
+                        but since P is a random point, the probablity of that is negligible.
+                    """
+                    Q = MontCurve.xmul_SDAC_public(P, A24, i)
                     Qx = get_affine_from_projective(Q)
 
                     self.assertEqual(Qx, sage_Q[0])
@@ -246,7 +249,7 @@ class TestMontgomeryCurve(unittest.TestCase):
                 test_one_curve(a)
 
 
-    def test_xmul_SDAC_safe(self, num_curve=20, num_point=10):
+    def test_xmul_SDAC_private(self, num_curve=20, num_point=10):
         for field, sage_Fp, MontCurve, prime_name, L in [
             (Fp1024, sage_GFp1024, MontCurve_p1024, "p1024_CTIDH", p1024_info["L"]),
             (Fp2048, sage_GFp2048, MontCurve_p2048, "p2048_CTIDH", p2048_info["L"]),
@@ -268,8 +271,11 @@ class TestMontgomeryCurve(unittest.TestCase):
                     sage_Q = sage_P
                     i = get_randint(0, len(L) - 1)
                     sage_Q = L[i] * sage_P
-
-                    Q = MontCurve.xmul_SDAC_safe(P, A24, i)
+                    """
+                    NOTE: if P is a l-torsion point where l<L[i], then Q != sage_Q
+                        but since P is a random point, the probablity of that is negligible.
+                    """
+                    Q = MontCurve.xmul_SDAC_private(P, A24, i)
                     Qx = get_affine_from_projective(Q)
 
                     self.assertEqual(Qx, sage_Q[0])

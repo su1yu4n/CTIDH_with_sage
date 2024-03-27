@@ -130,11 +130,8 @@ def read_velusqrt_steps_info(prime_name="p2048_CTIDH", scaled=True):
 
 
 def read_SDAC_info(prime_name='p2048_CTIDH'):
-    SDAC_info = []
-    with open(f"data/sdacs/{prime_name}", 'r') as f:
-        for line in f:
-            SDAC_info.append(list(map(int, line.split())))
-    return SDAC_info
+    with open(f"data/sdacs/{prime_name}") as f:
+        return json.load(f)
 
 
 # return the batch number of the batch that L[i] belongs to.

@@ -30,14 +30,15 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original",
     type_field = type(field(2))
 
     # Shortest Differential Addition Chains (SDACs) for each l_i, used in fast scalar multiplication.
-    SDACS = read_SDAC_info(prime_name)
-    assert len(SDACS) > 0, f'No precomputed sdac information for {prime_name}'
-    SDACS_LENGTH = list(map(len, SDACS))
-    SDACS_REVERSED = list(map(lambda x:x[::-1], SDACS))
+    SDAC_info = read_SDAC_info(prime_name)
+    primes_dac = SDAC_info["primes_dac"]
+    primes_daclen = SDAC_info["primes_daclen"]
+    
+    assert len(primes_dac) == len(primes_daclen) == len(L) == n
 
 
     def cmul(l: int):
-        return numpy.array([4.0 * (SDACS_LENGTH[L.index(l)] + 2), 2.0 * (SDACS_LENGTH[L.index(l)] + 2), 6.0 * (SDACS_LENGTH[L.index(l)] + 2) - 2.0])
+        return numpy.array([4.0 * (primes_daclen[L.index(l)] + 2), 2.0 * (primes_daclen[L.index(l)] + 2), 6.0 * (primes_daclen[L.index(l)] + 2) - 2.0])
     c_xmul = list(map(cmul, L))  # list of the costs of each [l]P
 
     def measure(x, SQR=1.00, ADD=0.00):
@@ -250,7 +251,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original",
         return x0
 
 
-    def xmul_SDAC(P: tuple, A24: tuple, j: int) -> tuple:
+    def xmul_SDAC(P: tuple, A24: tuple, j: int, maxdaclen: int) -> tuple:
         """
         ----------------------------------------------------------------------
         Scalar mult for PUBLIC primes that use Shortest Differential Addition Chain (SDAC)
@@ -260,52 +261,47 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original",
         output: the projective Montgomery x-coordinate point x([L[j]]P)
         ----------------------------------------------------------------------
         """
+        daclen = primes_daclen[j]
+        dac = primes_dac[j]
+
+        P1 = P
         P2 = xdbl(P, A24)
-        R = [P, P2, xadd(P2, P, P)]
-        for sdac in SDACS_REVERSED[j]:
-            if isinfinity(R[sdac]): # if isinfinity(R[sdac]):
-                R[:] = R[sdac ^ 1], R[2], xdbl(R[2], A24)
-            else:
-                R[:] = R[sdac ^ 1], R[2], xadd(R[2], R[sdac ^ 1], R[sdac])
-        return R[2]
+        P3 = xadd(P2, P, P)
 
+        Q = P
 
-    def xmul_SDAC_safe(P: tuple, A24: tuple, j: int) -> tuple:
-        """
-        ----------------------------------------------------------------------
-        Timing attack safe scalar mult for PRIVATE primes that use Shortest Differential Addition Chain (SDAC).
-        This algorithm consider each batch's max dac length to resist timing attack.
-        input : a projective Montgomery x-coordinate point x(P) := XP/ZP, the
-                projective Montgomery constants A24:= A + 2C and C24:=4C where
-                E : y^2 = x^3 + (A/C)*x^2 + x, and an positive integer j
-        output: the projective Montgomery x-coordinate point x([L[j]]P)
-        ----------------------------------------------------------------------
-        """
-        P2 = xdbl(P, A24)
-        R = [P, P2, xadd(P2, P, P)]
+        collision = isinfinity(P) # P是否为无穷远点, 即ZP是否为0
+        while True:
+            want = (daclen >= 0)
+            Q = CMOV(Q, P3, want)
+            if maxdaclen <=0:
+                break
+            P1, P2 = CSWAP(P1, P2, 1 - (dac & 1))
 
-        b = batchnumber_of_Li(j, batch_start, batch_stop)
-        maxdac_len = batch_maxdaclen[b]
-        daclen = SDACS_LENGTH[j]
-        SDACS_padded = SDACS_REVERSED[j] + [0] * (maxdac_len - daclen)
+            collision |= want & isinfinity(P2)
 
-        for sdac in SDACS_padded:
-            want = (daclen > 0)
+            next = xadd(P3, P1, P2)
+            P2 = P3
+            P3 = next
 
-            if isinfinity(R[sdac]):  # if isinfinity(R[sdac]):
-                TMP = [R[sdac ^ 1], R[2], xadd(R[0],R[2],R[1])]
-            else:
-                TMP = [R[sdac ^ 1], R[2], xadd(R[sdac ^ 1],R[2], R[sdac])]
-            
-            R = CMOV(R, TMP, want)
-            # del TMP
+            maxdaclen -= 1
             daclen -= 1
+            dac >>= 1
 
-        return R[2]
+        Q = CMOV(Q, P, collision) # 如果中途算出无穷远点，最后直接返回P
+        return Q
+
+    def xmul_SDAC_public(P: tuple, A24: tuple, j: int):
+        return xmul_SDAC(P, A24, j, primes_daclen[j])
+
+    def xmul_SDAC_private(P: tuple, A24: tuple, j: int):
+        b = batchnumber_of_Li(j, batch_start, batch_stop)
+        maxdaclen = batch_maxdaclen[b]
+        return xmul_SDAC(P, A24, j, maxdaclen)
 
 
-    xmul_public = xmul_SDAC if SDAC else xmul_Ladder
-    xmul_private = xmul_SDAC_safe if SDAC else xmul_Ladder
+    xmul_public = xmul_SDAC_public if SDAC else xmul_Ladder
+    xmul_private = xmul_SDAC_private if SDAC else xmul_Ladder
 
     # TODO: Add more useful things such as PRAC, eucild2d, cofactor_multiples, crisscross...
     # Read papers and see sibc...
