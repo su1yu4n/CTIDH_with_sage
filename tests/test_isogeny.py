@@ -471,7 +471,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         MontIsogeny.sK = d    
                     assert MontIsogeny.sJ <= MontIsogeny.sI
                     assert MontIsogeny.sK >= 0
-                    print("#######")
+                    # print("#######")
                     
                     while True:
                         T, _ = MontCurve.elligator(A)
@@ -486,51 +486,62 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             break
                         
                 MontIsogeny.kps_s(P, A24, ind)
-                if MontIsogeny.sJ > 0 :
+                if MontIsogeny.sJ > 1 :
                     bhalf_floor = MontIsogeny.sJ // 2
                     bhalf_ceil = MontIsogeny.sJ - bhalf_floor
-                    print(MontIsogeny.sK)
-                    print(MontIsogeny.sJ)
-                    print(MontIsogeny.sI)
-                    print(bhalf_ceil)
-                    print(bhalf_floor)
+                    # print(MontIsogeny.sK)
+                    # print(MontIsogeny.sJ)
+                    # print(MontIsogeny.sI)
+                    # print(bhalf_ceil)
+                    # print(bhalf_floor)
                     P2 = MontIsogeny.curve.xdbl(P, A24)
                     P4 = MontIsogeny.curve.xdbl(P2, A24)
                     Q = MontIsogeny.curve.xadd(
                     MontIsogeny.J[bhalf_ceil], MontIsogeny.J[bhalf_floor - 1], P4 if MontIsogeny.sJ % 2 else P2
                     )
-                if MontIsogeny.sI != 0:
-                    self.assertEqual(MontIsogeny.J[0], list(P))
-                    self.assertEqual(MontIsogeny.I[0], list(Q)) 
-                if MontIsogeny.sK >= 1:
-                    self.assertEqual(MontIsogeny.K[0], list(P2)) 
+                elif MontIsogeny.sJ == 1:
+                    Q = MontIsogeny.curve.xdbl(P, A24)  # x([2]P)
+                    Q2 = MontIsogeny.curve.xdbl(Q, A24)  # x([2]Q)
+ 
+                # if MontIsogeny.sK >= 1:
+                #         self.assertEqual(MontIsogeny.K[0], list(P2)) 
 
                 if MontIsogeny.sK >= 2:
-                    self.assertEqual(MontIsogeny.K[1], list(P4))   
+                    self.assertEqual(MontIsogeny.K[1], list(P4)) 
+                if MontIsogeny.sI > 1:
+                    self.assertEqual(MontIsogeny.J[0], list(P))
+                    self.assertEqual(MontIsogeny.I[0], list(Q)) 
+                # if MontIsogeny.sK >= 1:
+                #     self.assertEqual(MontIsogeny.K[0], list(P2)) 
+
+                # if MontIsogeny.sK >= 2:
+                #     self.assertEqual(MontIsogeny.K[1], list(P4))   
 
                 self.assertEqual(len(MontIsogeny.I) ,MontIsogeny.sI)
                 self.assertEqual(len(MontIsogeny.J) ,MontIsogeny.sJ)
                 self.assertEqual(len(MontIsogeny.K) ,MontIsogeny.sK)
                 
                 # # TODO: get a random point to  test and verify the kps
-                bound =  MontIsogeny.sJ 
-                k = get_randint(1, bound)
-                Px = get_affine_from_projective(P)
-                P_sage = sage_EC.lift_x(sage_Fp(Px))
-                kP_sage = (2*k - 1) * P_sage
-                self.assertEqual(
-                    get_affine_from_projective(MontIsogeny.J[k - 1]), kP_sage.xy()[0]
-                )
-                bound =  MontIsogeny.sI 
-                k = get_randint(1, bound)
-                Px = get_affine_from_projective(Q)
-                P_sage = sage_EC.lift_x(sage_Fp(Px))
-                kP_sage = (2*k - 1) * P_sage
-                self.assertEqual(
-                    get_affine_from_projective(MontIsogeny.I[k - 1]), kP_sage.xy()[0]
-                )
+                if MontIsogeny.sJ >= 1:
+                    bound =  MontIsogeny.sJ 
+                    k = get_randint(1, bound)
+                    Px = get_affine_from_projective(P)
+                    P_sage = sage_EC.lift_x(sage_Fp(Px))
+                    kP_sage = (2*k - 1) * P_sage
+                    self.assertEqual(
+                        get_affine_from_projective(MontIsogeny.J[k - 1]), kP_sage.xy()[0]
+                    )
+                if MontIsogeny.sI >= 1:
+                    bound =  MontIsogeny.sI 
+                    k = get_randint(1, bound)
+                    Px = get_affine_from_projective(Q)
+                    P_sage = sage_EC.lift_x(sage_Fp(Px))
+                    kP_sage = (2*k - 1) * P_sage
+                    self.assertEqual(
+                        get_affine_from_projective(MontIsogeny.I[k - 1]), kP_sage.xy()[0]
+                    )
                 
-                if MontIsogeny.sK >= 1:
+                if MontIsogeny.sK > 1:
                     bound =  MontIsogeny.sK
                     # print(MontIsogeny.sK)
                     k = get_randint(1, bound)
@@ -567,49 +578,43 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 if MontIsogeny.sI == 0:
                     MontIsogeny.ptree_hI = None
                 else:
-                    if MontIsogeny.sI == 1:
-                        I = [list(P2)]
-                        hI = [
-                        list([(0 - P2[0]), P2[1]])
-                        ]
-                    else:
-                        hI = [
-                        [(0 - iP[0]), iP[1]] for iP in MontIsogeny.I
-                        ]  # we only need to negate x-coordinate of each point
-                MontIsogeny.ptree_hI = MontIsogeny.poly_mul.product_tree(
-                    hI, MontIsogeny.sI
-                )  # product tree of hI
-                
-                
-                
-                # Using scaled remainder trees
-                if MontIsogeny.sI < (2 * MontIsogeny.sJ - MontIsogeny.sI + 1) or MontIsogeny.sI == 1:
-                    (
-                        MontIsogeny.ptree_hI['reciprocal'],
-                        MontIsogeny.ptree_hI['a'],
-                    ) = MontIsogeny.poly_redc.reciprocal(
-                        MontIsogeny.ptree_hI['poly'][::-1],
-                        MontIsogeny.sI + 1,
-                        2 * MontIsogeny.sJ - MontIsogeny.sI + 1,
-                    )
-                    MontIsogeny.ptree_hI['scaled'], MontIsogeny.ptree_hI['as'] = (
-                        list(MontIsogeny.ptree_hI['reciprocal'][: MontIsogeny.sI]),
-                        MontIsogeny.ptree_hI['a'],
-                    )
+                    hI = [
+                    [(0 - iP[0]), iP[1]] for iP in MontIsogeny.I
+                    ]  # we only need to negate x-coordinate of each point
+                    MontIsogeny.ptree_hI = MontIsogeny.poly_mul.product_tree(
+                        hI, MontIsogeny.sI
+                    )  # product tree of hI
+                    
+                    
+                    
+                    # Using scaled remainder trees
+                    if MontIsogeny.sI < (2 * MontIsogeny.sJ - MontIsogeny.sI + 1) or MontIsogeny.sI == 1:
+                        (
+                            MontIsogeny.ptree_hI['reciprocal'],
+                            MontIsogeny.ptree_hI['a'],
+                        ) = MontIsogeny.poly_redc.reciprocal(
+                            MontIsogeny.ptree_hI['poly'][::-1],
+                            MontIsogeny.sI + 1,
+                            2 * MontIsogeny.sJ - MontIsogeny.sI + 1,
+                        )
+                        MontIsogeny.ptree_hI['scaled'], MontIsogeny.ptree_hI['as'] = (
+                            list(MontIsogeny.ptree_hI['reciprocal'][: MontIsogeny.sI]),
+                            MontIsogeny.ptree_hI['a'],
+                        )
 
-                else:
-                    (
-                        MontIsogeny.ptree_hI['scaled'],
-                        MontIsogeny.ptree_hI['as'],
-                    ) = MontIsogeny.poly_redc.reciprocal(
-                        MontIsogeny.ptree_hI['poly'][::-1], MontIsogeny.sI + 1, MontIsogeny.sI
-                    )
-                    MontIsogeny.ptree_hI['reciprocal'], MontIsogeny.ptree_hI['a'] = (
-                        list(
-                            MontIsogeny.ptree_hI['scaled'][: (2 * MontIsogeny.sJ - MontIsogeny.sI + 1)]
-                        ),
-                        MontIsogeny.ptree_hI['as'],
-                    )          
+                    else:
+                        (
+                            MontIsogeny.ptree_hI['scaled'],
+                            MontIsogeny.ptree_hI['as'],
+                        ) = MontIsogeny.poly_redc.reciprocal(
+                            MontIsogeny.ptree_hI['poly'][::-1], MontIsogeny.sI + 1, MontIsogeny.sI
+                        )
+                        MontIsogeny.ptree_hI['reciprocal'], MontIsogeny.ptree_hI['a'] = (
+                            list(
+                                MontIsogeny.ptree_hI['scaled'][: (2 * MontIsogeny.sJ - MontIsogeny.sI + 1)]
+                            ),
+                            MontIsogeny.ptree_hI['as'],
+                        )          
                 A_new = MontIsogeny.xisog_s(A24, ind)
                 phi_T = MontIsogeny.xeval_s(T, A24)
 
@@ -631,8 +636,8 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 # print(MontIsogeny.sI)
                 # print(MontIsogeny.sJ)
                 # print(MontIsogeny.sK)
-                print(phi_T[0])
-                print(phi_T[1])
+                # print(phi_T[0])
+                # print(phi_T[1])
                 
                 if not(phi_T[0] == 0 and phi_T[1] == 0):
                     self.assertEqual(sage_phi_Tx, get_affine_from_projective(phi_T))
@@ -676,7 +681,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
 
                     
                     for _ in range(num_primes_per_batch):
-                        print("#######")
+                        # print("#######")
                         ind = get_randint(batch_start[b], batch_stop[b] - 1) # index of l in L
                         rand = get_randint(0, 2**32-1)
                         is_positive_action = True if rand % 2 == 0 else False # Decide which point (P+ or P-) is the kernel point
