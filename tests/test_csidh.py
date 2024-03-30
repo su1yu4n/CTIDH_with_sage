@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from sage.all import EllipticCurve, proof, is_prime, GF
+from sage.all import EllipticCurve, proof, is_prime, GF, binomial
 
 from CTIDH.csidh import CSIDH
     
@@ -93,8 +93,7 @@ class TestCSIDH(unittest.TestCase):
         # TODO: Add svelu and p2048_CITDH in the future
         return super().setUp()
 
-    # TODO: reduce num_sk in the future
-    # TODO: test the randomness of sk
+    # NOTE: Randomness of skgen tested in test_randomboundl1
     def test_skgen(self, num_sk=100):
         def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk):
             batch_bound = csidh_instance.prime_info['batch_bound']
@@ -117,6 +116,65 @@ class TestCSIDH(unittest.TestCase):
             
         for instance in self.CSIDH_instances:
             test_one_CSIDH_instance(instance)
+
+
+    def test_random_boundedl1(self):
+        def phi_x_y(x, y) -> int:
+            up = min(x, y)
+            result = 0
+            for k in range(0, up+1):
+                result += binomial(x, k) * 2**k * binomial(y, k)
+            return result
+
+        # for csidh_instance in self.CSIDH_instances:
+        csidh_instance = self.CSIDH_instances[0]
+        batch_bound = csidh_instance.prime_info['batch_bound']
+        batch_start = csidh_instance.prime_info['batch_start']
+        batch_stop = csidh_instance.prime_info['batch_stop']
+
+        def test_one_batch(b):
+            
+            Ni = batch_stop[b] - batch_start[b]
+            mi = batch_bound[b]
+            keyspace = phi_x_y(Ni, mi)
+            # print(f'\nbatch number: {b}')
+            # print(f'Ni = {Ni}')
+            # print(f'mi = {mi}')
+            # print(f'keyspace = {keyspace}')
+
+            avg_num_per_key = 200 if keyspace < 500 else 100
+            bias = 0.2*avg_num_per_key if keyspace < 500 else 0.25*avg_num_per_key
+            num_ei = avg_num_per_key * keyspace
+            
+            # print(f'num_ei = {num_ei}')
+            ei_stat = {}
+
+            num_out_of_bias = 0
+            for _ in range(num_ei):
+                key_str = str(csidh_instance.random_boundedl1(Ni, mi))
+                if key_str not in ei_stat:
+                    ei_stat[key_str] = 1
+                else:
+                    ei_stat[key_str] += 1
+            for _, num_key in ei_stat.items():
+                if abs(num_key - avg_num_per_key) > bias:
+                    num_out_of_bias += 1
+            
+            # print(f'num_out_of_bias = {num_out_of_bias}')
+            out_bias_ratio = 0.02 if keyspace < 500 else 0.05
+            max_num_out_of_bias = out_bias_ratio * keyspace
+            # This should only fail with a negligible probablity
+            self.assertLessEqual(
+                num_out_of_bias, 
+                max_num_out_of_bias,
+                msg=f"Too many key's number out of bias, cardinality of keyspace = {keyspace}"
+            )
+        
+        # NOTE: keyspace = 8989 takes 500s, too slow for a daily test. 
+        # But it has been already tested.
+        # for b in range(0, 5): 
+        for b in range(0, 4):
+            test_one_batch(b)
 
 
     def test_group_action(self, num_sk=10):
