@@ -57,59 +57,61 @@ class CSIDH:
         pk = self.group_action(0, sk)
         return sk, pk
 
+
+    def random_boundedl1(self, Ni, mi, b=32):
+        if mi == 0:
+            return [0] * Ni
+
+        rnum = Ni + mi
+        while True:
+            # get random Ni+mi b-bit ints
+            r = [
+                get_randint(-(2 ** (b - 1)), 2 ** (b - 1) - 1) for _ in range(rnum)
+            ]
+            # step2 and step3
+            for j in range(0, rnum):
+                r[j] &= ~1
+            for j in range(0, Ni):
+                r[j] |= 1
+            r.sort()  # NOTE: use constant-time sort in practice
+            # step4: if any adjacent ints are the same outside the bottom bit, start over
+            collision = 0
+            # NOTE: strangely, in original CTIDH's code the following for loop condition is j<Ni, not rnum.
+            for j in range(0, rnum - 1):
+                collision |= (r[j] ^ r[j + 1] & ~1) == 0
+                # NOTE: ^ if x==0 , then ~( (x>>(b-1)) | (-x>>(b-1))) == -1. otherwise it is 0. x==0 should be implemented like this.
+            if collision:  # if collision == 1
+                continue
+            for j in range(0, rnum):
+                r[j] &= 1
+            for j in range(1, rnum):
+                r[j] += r[j - 1]
+
+            e = [0] * Ni
+            for i in range(0, Ni):
+                numi = 0
+                for j in range(0, rnum):
+                    numi += (
+                        r[j] == i
+                    )  # this == should also be done in constant time using bit operation
+                e[i] = numi
+
+            for i in range(1, Ni):
+                e[i] -= 1
+
+            reject = 0
+            s = get_randint(-(2 ** (Ni - 1)), 2 ** (Ni - 1) - 1)
+            for i in range(0, Ni):
+                if s & 1 == 1:
+                    e[i] = -e[i]
+                    reject |= e[i] == 0
+                s >>= 1
+            if reject:
+                continue
+            return e
+        
+
     def skgen(self):
-        def random_boundedl1(Ni, mi, b=32):
-            if mi == 0:
-                return [0] * Ni
-
-            rnum = Ni + mi
-            while True:
-                # get random Ni+mi b-bit ints
-                r = [
-                    get_randint(-(2 ** (b - 1)), 2 ** (b - 1) - 1) for _ in range(rnum)
-                ]
-                # step2 and step3
-                for j in range(0, rnum):
-                    r[j] &= ~1
-                for j in range(0, Ni):
-                    r[j] |= 1
-                r.sort()  # NOTE: use constant-time sort in practice
-                # step4: if any adjacent ints are the same outside the bottom bit, start over
-                collision = 0
-                # NOTE: strangely, in original CTIDH's code the following for loop condition is j<Ni, not rnum.
-                for j in range(0, rnum - 1):
-                    collision |= (r[j] ^ r[j + 1] & ~1) == 0
-                    # NOTE: ^ if x==0 , then ~( (x>>(b-1)) | (-x>>(b-1))) == -1. otherwise it is 0. x==0 should be implemented like this.
-                if collision:  # if collision == 1
-                    continue
-                for j in range(0, rnum):
-                    r[j] &= 1
-                for j in range(1, rnum):
-                    r[j] += r[j - 1]
-
-                e = [0] * Ni
-                for i in range(0, Ni):
-                    numi = 0
-                    for j in range(0, rnum):
-                        numi += (
-                            r[j] == i
-                        )  # this == should also be done in constant time using bit operation
-                    e[i] = numi
-
-                for i in range(1, Ni):
-                    e[i] -= 1
-
-                reject = 0
-                s = get_randint(-(2 ** (Ni - 1)), 2 ** (Ni - 1) - 1)
-                for i in range(0, Ni):
-                    if s & 1 == 1:
-                        e[i] = -e[i]
-                        reject |= e[i] == 0
-                    s >>= 1
-                if reject:
-                    continue
-                return e
-
         batch_bound = self.prime_info["batch_bound"]
         batch_start = self.prime_info["batch_start"]
         batch_stop = self.prime_info["batch_stop"]
@@ -117,7 +119,7 @@ class CSIDH:
         sk = []
         for i in range(batch_num):
             batchlen = batch_stop[i] - batch_start[i]
-            batch_ei = random_boundedl1(batchlen, batch_bound[i])
+            batch_ei = self.random_boundedl1(batchlen, batch_bound[i])
             sk += batch_ei
         return sk
 
