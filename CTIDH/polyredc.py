@@ -104,7 +104,7 @@ def PolyRedc(polymul):
         Modular reduction in fp[x] with precomputation
         """
 
-        flen = f['deg'] + 1
+        flen = f[3] + 1
 
         if hlen < flen:
             # Base case, h(x) mod f(x) = h(x)
@@ -112,15 +112,15 @@ def PolyRedc(polymul):
 
         elif flen == 2 and hlen == 2:
 
-            t0 = (h[0] * f['poly'][1])  # h0 * f1
-            t0 -= (h[1] * f['poly'][0]) # t0 = t0 - (t1 == (h1 * f0))
+            t0 = (h[0] * f[2][1])  # h0 * f1
+            t0 -= (h[1] * f[2][0]) # t0 = t0 - (t1 == (h1 * f0))
             return [t0]  # f1 * (h0 + h1*x) mod (f0 + f1*x)
 
         elif flen == 2 and hlen == 3:
 
-            f0_squared = (f['poly'][0] ** 2)  # f0^2
-            f1_squared = (f['poly'][1] ** 2)  # f1^2
-            t = (f['poly'][0] - f['poly'][1])  # f0 - f1
+            f0_squared = (f[2][0] ** 2)  # f0^2
+            f1_squared = (f[2][1] ** 2)  # f1^2
+            t = (f[2][0] - f[2][1])  # f0 - f1
 
             t **= 2  # (f0 - f1)^2
             t -= f0_squared  # (f0 - f1)^2 - f0^2
@@ -139,10 +139,10 @@ def PolyRedc(polymul):
 
         elif flen == 3 and hlen == 3:
 
-            f2h1 = (f['poly'][2] * h[1])
-            f2h0 = (f['poly'][2] * h[0])
-            f1h2 = (f['poly'][1] * h[2])
-            f0h2 = (f['poly'][0] * h[2])
+            f2h1 = (f[2][2] * h[1])
+            f2h0 = (f[2][2] * h[0])
+            f1h2 = (f[2][1] * h[2])
+            f0h2 = (f[2][0] * h[2])
             #return [(f2h0 - f0h2), (f2h1 - f1h2)]
             f2h0 -= f0h2
             f2h1 -= f1h2
@@ -162,7 +162,7 @@ def PolyRedc(polymul):
             # (H/F) mod x^(deg(f) - deg(h))
             Q = poly_mul_modxn(
                 hlen - flen + 1,
-                f['reciprocal'][: (hlen - flen + 1)],
+                f[4][: (hlen - flen + 1)],
                 hlen - flen + 1,
                 H[: (hlen - flen + 1)],
                 hlen - flen + 1,
@@ -172,7 +172,7 @@ def PolyRedc(polymul):
                 Q[i] for i in range(hlen - flen, -1, -1)
             ]  # x^deg(Q) * Q(x^-1) is the quotient
             qf = poly_mul_modxn(
-                flen - 1, q, hlen - flen + 1, f['poly'], flen
+                flen - 1, q, hlen - flen + 1, f[2], flen
             )  # (q * f) (x) has degree equals deg(h)
 
             # a*h(x) - (q * f)(x) will gives a polynomial of degree (deg(f) - 1)
@@ -182,7 +182,7 @@ def PolyRedc(polymul):
             #] XXX
             res = []
             for i in range(0, flen - 1, 1):
-                tmp = f['a'] * h[i]
+                tmp = f[5] * h[i]
                 tmp -= qf[i]
                 res.append(tmp)
             return res
@@ -332,17 +332,17 @@ def PolyRedc(polymul):
         left = multieval_scaled(
             fg,
             flen,
-            ptree_f['right']['poly'],
-            ptree_f['right']['deg'] + 1,
-            ptree_f['left'],
+            ptree_f[1][2],
+            ptree_f[1][3] + 1,
+            ptree_f[0],
             m,
         )
         right = multieval_scaled(
             fg,
             flen,
-            ptree_f['left']['poly'],
-            ptree_f['left']['deg'] + 1,
-            ptree_f['right'],
+            ptree_f[0][2],
+            ptree_f[0][3] + 1,
+            ptree_f[1],
             n - m,
         )
         return left + right

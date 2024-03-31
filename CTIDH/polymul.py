@@ -843,71 +843,57 @@ def PolyMul(field, maxdeg = None, mindeg = 64):
         """
 
         if n == 0:
-            return {'left': None, 'right': None, 'poly': [1], 'deg': 0}
+            return [None,  None, [1], 0]
 
         if n == 1:
 
             # No multiplication is required
-            return {
-                'left': None,
-                'right': None,
-                'poly': f[0],
-                'deg': len(f[0]) - 1,
-            }
+            return [None,None,f[0],len(f[0]) - 1]
 
         else:
 
             m = n - (n // 2)
             left = product_tree(f[:m], m)
             right = product_tree(f[m:], n - m)
-            return {
-                'left': left,
-                'right': right,
-                'poly': poly_mul(
-                    left['poly'],
-                    left['deg'] + 1,
-                    right['poly'],
-                    right['deg'] + 1,
+            return [left,
+                    right,
+                    poly_mul(
+                    left[2],
+                    left[3]+ 1,
+                    right[2],
+                    right[3] + 1,
                 ),
-                'deg': left['deg'] + right['deg'],
-            }
+                left[3] + right[3],
+            ]
 
     def product_selfreciprocal_tree(f, n):
         """
-        Product tree of given list of self reciprocal polynomials
+        Product tree of given list of polynomials
         """
 
         if n == 0:
-            return {'left': None, 'right': None, 'poly': [1], 'deg': 0}
+            return [None,  None, [1], 0,]
 
         if n == 1:
 
             # No multiplication is required
-            return {
-                'left': None,
-                'right': None,
-                'poly': f[0],
-                'deg': len(f[0]) - 1,
-            }
+            return [None,None,f[0],len(f[0]) - 1,]
 
         else:
 
             m = n - (n // 2)
             left = product_selfreciprocal_tree(f[:m], m)
             right = product_selfreciprocal_tree(f[m:], n - m)
-            return {
-                'left': left,
-                'right': right,
-                'poly': poly_mul_selfreciprocal(
-                    left['poly'],
-                    left['deg'] + 1,
-                    right['poly'],
-                    right['deg'] + 1,
+            return [left,
+                    right,
+                    poly_mul_selfreciprocal(
+                    left[2],
+                    left[3]+ 1,
+                    right[2],
+                    right[3] + 1,
                 ),
-                'deg': left['deg'] + right['deg'],
-            }
-
-            # Now, the resultant of two polinomials corresponds with product of all g(x) mod f_i(x) when each f_i is a linear polynomial
+                left[3] + right[3],
+                ]            # Now, the resultant of two polinomials corresponds with product of all g(x) mod f_i(x) when each f_i is a linear polynomial
 
     def product(list_g_mod_f, n):
 
