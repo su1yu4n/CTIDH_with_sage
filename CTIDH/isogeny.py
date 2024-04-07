@@ -2,19 +2,12 @@ from typing import List
 from math import floor, sqrt
 
 from CTIDH.mont import MontgomeryCurve
-from CTIDH.utils import read_prime_info ,read_velusqrt_steps_info, hamming_weight, bitlength, isequal, batchmaxprime_of_Li, batchminprime_of_Li, batchnumber_of_Li, CMOV, CSWAP
+from CTIDH.utils import read_velusqrt_steps_info, hamming_weight, bitlength, isequal, batchmaxprime_of_Li, batchminprime_of_Li, batchnumber_of_Li, CMOV, CSWAP
 from CTIDH.polymul import PolyMul
 from CTIDH.polyredc import PolyRedc
 from CTIDH.primefield import PrimeField
 import numpy
 
-p1024_info = read_prime_info("p1024_CTIDH")
-p2048_info = read_prime_info("p2048_CTIDH")
-p1024 = p1024_info["p"]
-p2048 = p2048_info["p"]
-
-Fp1024 = PrimeField(p1024)
-Fp2048 = PrimeField(p2048)
 
 def doc(s):
     class __doc(object):
@@ -605,8 +598,8 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             #     B_0 = CMOV(B_0, tmp1, i <= l-1)
             #     B_1 = CMOV(B_1, tmp2, i <= l-1)
             
-            B_0 = Fp1024(A24[0])
-            B_1 = Fp1024(A24[0]- A24[1])
+            B_0 = self.field(A24[0])
+            B_1 = self.field(A24[0]- A24[1])
             B_0 = B_0.safe_pow(l, l_fake)
             B_1 = B_1.safe_pow(l, l_fake)
             
