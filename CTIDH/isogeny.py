@@ -28,14 +28,15 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
 
     @doc(NAME)
     class Formulae:
-        def __init__(self, curve, tuned=True, scaled=False):
+        def __init__(self, curve, tuned=True, scaled=True):
             """_summary_
 
             Args:
                 curve (MontgomeryCurve): The object returned by MontgomeryCurve() in mont.py
                 tuned (bool, optional): True if fine-tuned velusqrt information is presented in data folder. Defaults to True.
                 scaled (bool, optional): Use scaled remainder tree or not. 
-                If True, it will read and use velusqrt tuned info for scaled version. Defaults to False.
+                If True, it will read and use velusqrt tuned info for scaled version. Defaults to True.
+            NOTE: Currently we are not planned to implement untuned version and unscaled version.
             """
             self.formula_name = formula_name
 
