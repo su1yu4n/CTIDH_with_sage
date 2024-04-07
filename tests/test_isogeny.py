@@ -7,7 +7,7 @@ from sage.all import EllipticCurve, proof, GF, PolynomialRing, ZZ
 
 from CTIDH import PrimeField, MontgomeryCurve, MontgomeryIsogeny
 
-from CTIDH.utils import read_prime_info, batchmaxprime_of_Li, get_randint,CMOV
+from CTIDH.utils import read_prime_info, batchmaxprime_of_Li, get_randint
 
 
 p1024_info = read_prime_info("p1024_CTIDH")
@@ -375,7 +375,6 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             sage_P = sage_E_minus_a.lift_x(-Px) # (x,iy) -> (-x, y)
                             sage_P = sage_E_minus_a(sage_P)
                             self.assertEqual((ZZ(L[ind]) * sage_P).is_zero(), True) # check sage_P's order == L[ind]
-                            # FIXME: invalid parameters to EllipticCurveIsogeny constructor
                             if L[ind] <= 200: # l <= 200 use traditional velu
                                 sage_phi = sage_E_minus_a.isogeny(kernel=sage_P, model="montgomery", check=False)
                             else:
@@ -423,14 +422,14 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 a_new = test_one_curve(field(a_new))
     
 
-    def test_kps_s(self, num_curve=5, num_isogeny=3):
-        pass
+    # def test_kps_s(self, num_curve=5, num_isogeny=3):
+    #     pass
 
-    def test_xisog_s(self, num_curve=5, num_isogeny=3):
-        pass
+    # def test_xisog_s(self, num_curve=5, num_isogeny=3):
+    #     pass
 
-    def test_xeval_s(self, num_curve=5, num_isogeny=3):
-        pass
+    # def test_xeval_s(self, num_curve=5, num_isogeny=3):
+    #     pass
 
     def test_svelu(self, num_curve=5, num_isogeny=5):
         for sage_Fp, field, MontCurve, MontIsogeny in [
@@ -652,6 +651,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
             for _ in range(num_curve - 1):
                 a_new = test_one_curve(field(a_new))
 
+    # TODO: Test again
     def test_matryoshka_isogeny_svelu(self, num_curve=5, num_batch=2, num_primes_per_batch=3):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_hvelu_p1024),
@@ -769,7 +769,6 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             sage_P = sage_E_minus_a.lift_x(-Px) # (x,iy) -> (-x, y)
                             sage_P = sage_E_minus_a(sage_P)
                             self.assertEqual((ZZ(L[ind]) * sage_P).is_zero(), True) # check sage_P's order == L[ind]
-                            # FIXME: invalid parameters to EllipticCurveIsogeny constructor
                             if L[ind] <= 200: # l <= 200 use traditional velu
                                 sage_phi = sage_E_minus_a.isogeny(kernel=sage_P, model="montgomery", check=False)
                             else:
@@ -800,22 +799,22 @@ class TestMontgomeryIsogeny(unittest.TestCase):
 
                     # Check the numbers of Fp-operations are (exactly) the same with different l in the same batch
                     # print(f'add_count={add_counts[0]}, mul_count={mul_counts[0]}, sqr_count={sqr_counts[0]}')
-                    # for j in range(1, num_primes_per_batch):
-                    #     self.assertEqual(add_counts[0], add_counts[j])
-                    #     self.assertEqual(mul_counts[0], mul_counts[j])
-                    #     self.assertEqual(sqr_counts[0], sqr_counts[j])
-                    #     self.assertEqual(pow_counts[0], pow_counts[j])
+                    for j in range(1, num_primes_per_batch):
+                        self.assertEqual(add_counts[0], add_counts[j])
+                        self.assertEqual(mul_counts[0], mul_counts[j])
+                        self.assertEqual(sqr_counts[0], sqr_counts[j])
+                        self.assertEqual(pow_counts[0], pow_counts[j])
                 
-                    if L[ind] <= MontIsogeny.HYBRID_BOUND:
-                        print("tvelu")
-                        print(f"mul_counts:{mul_counts}")
-                        print(f"pow_counts:{pow_counts}")
-                        print("#########")
-                    else:
-                        print("svelu")
-                        print(f"mul_counts:{mul_counts}")
-                        print(f"pow_counts:{pow_counts}")
-                        print("#########")
+                    # if L[ind] <= MontIsogeny.HYBRID_BOUND:
+                    #     print("tvelu")
+                    #     print(f"mul_counts:{mul_counts}")
+                    #     print(f"pow_counts:{pow_counts}")
+                    #     print("#########")
+                    # else:
+                    #     print("svelu")
+                    #     print(f"mul_counts:{mul_counts}")
+                    #     print(f"pow_counts:{pow_counts}")
+                    #     print("#########")
                             
                     return int(a_new)
                 
