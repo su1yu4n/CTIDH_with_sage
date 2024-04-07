@@ -96,11 +96,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             )  # list of the costs of each degree-l isogeny construction
             
              
-            '''
-            TODO: Compute the cost.
-            NOTE: Currently this is not performed, because it requires finding generators, which need PRAC, cofactor_multiples and more...
-                Also it is not clear that whether sibc's routine is adaptable to CTIDH .
-            '''
+
             # # Now, we proceed to store all the correct costs
             # if formula_name != 'tvelu' and uninitialized:
             #     print("// Precomputation cost regarding kps, xisog, and xeval of the velusqrt formulae")
@@ -126,7 +122,6 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
             )
 
 
-        # TODO: Possibly add a parameter A24 to save a few additions. (not very interesting..)
         def matryoshka_isogeny(self, A: tuple, Ts:List[tuple], Tnewlen: int, P: tuple, i: int):
             """ Computing the L[i]-isogeny phi: EA -> EA'. 
                 The computation leverages matryoshka-doll structure to resist timing attack.
@@ -389,7 +384,7 @@ def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
         #     self.sK = d
         #     return None
 
-        # TODO: Implement these velusqrt algorithms
+
         def kps_s(self, P: tuple,A24: tuple, i: int) -> None:
             # print(f"kps_s{self.L[i]}")
             if self.sI == 0:

@@ -652,11 +652,11 @@ class TestMontgomeryIsogeny(unittest.TestCase):
             for _ in range(num_curve - 1):
                 a_new = test_one_curve(field(a_new))
 
-    # TODO: Test again
+
     def test_matryoshka_isogeny_svelu(self, num_curve=5, num_batch=2, num_primes_per_batch=3):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_hvelu_p1024),
-            # (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048),  # tooo slow for a routine test
+            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048),
         ]:
             batch_start, batch_stop, L, L_len = MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L, MontCurve.n
             # test and return a new curve's coefficient, because we need to ensure the curves we choose are all supersingular
@@ -665,6 +665,8 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 A24 = (a + 2, field(4))
                 sage_Ea = get_sage_montgomery_curve(sage_Fp, a.get_int_value())
                 sage_E_minus_a = get_sage_montgomery_curve(sage_Fp, -a.get_int_value())
+                sage_Ea.set_order(sage_Fp.characteristic() + 1)
+                sage_E_minus_a.set_order(sage_Fp.characteristic() + 1)
                 # NOTE: Tnewlen must be chosen here, otherwise we are not able to verify the constant-time property in our following code. 
                 Tnewlen = get_randint(0, 2**32-1) % 3
                 assert 0 <= Tnewlen <= 2
@@ -682,8 +684,9 @@ class TestMontgomeryIsogeny(unittest.TestCase):
 
                     # Choose a batch
                     # b = get_randint(0, len(MontCurve.batch_start) - 1) # tooo slow for traditinal velu..
-                    b = get_randint(0, 8)
-                    # print(f'Testing batch {b}, curve a = {a}\n')
+                    # NOTE: the last batch will never be done in CTIDH, and it's very slow, so we never test it.
+                    b = get_randint(6, len(batch_start)-1) 
+                    print(f'Testing batch {b}, curve a = {a}\n')
 
                     
                     for _ in range(num_primes_per_batch):
@@ -695,7 +698,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         is_positive_action = True if rand % 2 == 0 else False # Decide which point (P+ or P-) is the kernel point
                         
                         # print(f'\nA = {A}')
-                        # print(f'Testing prime l = {L[ind]}.')
+                        print(f'Testing prime l = {L[ind]}.')
                         # print(f'is_positive_action = {is_positive_action}')
 
                         P = (field(0), field(1))
@@ -744,6 +747,8 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             # Check Anew is correct                                
                             Px = sage_Fp(get_affine_from_projective(P))
                             sage_P = sage_Ea.lift_x(Px)
+
+                            sage_P.set_order(L[ind]) 
                             self.assertEqual((ZZ(L[ind]) * sage_P).is_zero(), True) # check sage_P's order == L[ind]
                             if L[ind] <= 200: # l <= 200 use traditional velu
                                 sage_phi = sage_Ea.isogeny(kernel=sage_P, model="montgomery", check=False)
@@ -769,6 +774,9 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             Px = sage_Fp(get_affine_from_projective(P))
                             sage_P = sage_E_minus_a.lift_x(-Px) # (x,iy) -> (-x, y)
                             sage_P = sage_E_minus_a(sage_P)
+                            # Save some time in velusqrt, otherwise sagemath will compute the order.
+                            sage_P.set_order(L[ind]) 
+
                             self.assertEqual((ZZ(L[ind]) * sage_P).is_zero(), True) # check sage_P's order == L[ind]
                             if L[ind] <= 200: # l <= 200 use traditional velu
                                 sage_phi = sage_E_minus_a.isogeny(kernel=sage_P, model="montgomery", check=False)
@@ -806,16 +814,21 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         self.assertEqual(sqr_counts[0], sqr_counts[j])
                         self.assertEqual(pow_counts[0], pow_counts[j])
                 
-                    # if L[ind] <= MontIsogeny.HYBRID_BOUND:
-                    #     print("tvelu")
-                    #     print(f"mul_counts:{mul_counts}")
-                    #     print(f"pow_counts:{pow_counts}")
-                    #     print("#########")
-                    # else:
-                    #     print("svelu")
-                    #     print(f"mul_counts:{mul_counts}")
-                    #     print(f"pow_counts:{pow_counts}")
-                    #     print("#########")
+                    if L[ind] <= MontIsogeny.HYBRID_BOUND:
+                        print('hybrid bound: {MontIsogeny.HYBRID_BOUND}')
+                        print("tvelu")
+                        print(f"add_count:{mul_counts[0]}")
+                        print(f"mul_count:{mul_counts[0]}")
+                        print(f"sqr_count:{sqr_counts[0]}")
+                        print(f"pow_count:{pow_counts[0]}")
+                        print("#########")
+                    else:
+                        print("svelu")
+                        print(f"add_count:{mul_counts[0]}")
+                        print(f"mul_count:{mul_counts[0]}")
+                        print(f"sqr_count:{sqr_counts[0]}")
+                        print(f"pow_count:{pow_counts[0]}")
+                        print("#########")
                             
                     return int(a_new)
                 
