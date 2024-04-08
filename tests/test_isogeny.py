@@ -263,11 +263,12 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                 a_new = test_one_curve(field(a_new))
 
 
-    def test_matryoshka_isogeny_tvelu(self, num_curve=5, num_batch=2, num_primes_per_batch=3):
+    def test_matryoshka_isogeny_tvelu(self, num_curve=3, num_batch=3, num_primes_per_batch=3):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_tvelu_p1024),
             # (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048),  # tooo slow for a routine test
         ]:
+            print(f'Testing {field.__name__}')
             batch_start, batch_stop, L, L_len = MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L, MontCurve.n
             # test and return a new curve's coefficient, because we need to ensure the curves we choose are all supersingular
             def test_one_curve(a=field(0), num_batch=num_batch) -> int:
@@ -293,7 +294,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                     # Choose a batch
                     # b = get_randint(0, len(MontCurve.batch_start) - 1) # tooo slow for traditinal velu..
                     b = get_randint(0, 8)
-                    # print(f'Testing batch {b}, curve a = {a}\n')
+                    print(f'Testing batch {b}, tvelu:')
 
                     for _ in range(num_primes_per_batch):
                         ind = get_randint(batch_start[b], batch_stop[b] - 1) # index of l in L
@@ -411,6 +412,13 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         self.assertEqual(mul_counts[0], mul_counts[j])
                         self.assertEqual(sqr_counts[0], sqr_counts[j])
                         self.assertEqual(pow_counts[0], pow_counts[j])
+                    
+                    print(f"add_count:{mul_counts[0]}, "
+                          f"mul_count:{mul_counts[0]}, "
+                          f"sqr_count:{sqr_counts[0]}, "
+                          f"pow_count:{pow_counts[0]}, "
+                    )
+                    print("#########")
                     return int(a_new)
                 
                 a_new = 0
@@ -452,7 +460,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                     l_fake = batchmaxprime_of_Li(
                         ind, MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L
                     )
-                    print(MontIsogeny.HYBRID_BOUND)
+                    # print(MontIsogeny.HYBRID_BOUND)
                     if MontCurve.L[ind] >= MontIsogeny.HYBRID_BOUND:
                         if MontIsogeny.tuned:
                             MontIsogeny.sJ = MontIsogeny.sJ_list[ind]
@@ -656,8 +664,10 @@ class TestMontgomeryIsogeny(unittest.TestCase):
     def test_matryoshka_isogeny_svelu(self, num_curve=5, num_batch=2, num_primes_per_batch=3):
         for sage_Fp, field, MontCurve, MontIsogeny in [
             (GF(p1024), Fp1024, MontCurve_p1024, isogeny_hvelu_p1024),
-            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_tvelu_p2048),
+            (GF(p2048), Fp2048, MontCurve_p2048, isogeny_hvelu_p2048),
         ]:
+            print(f'Testing {field.__name__}')
+            
             batch_start, batch_stop, L, L_len = MontCurve.batch_start, MontCurve.batch_stop, MontCurve.L, MontCurve.n
             # test and return a new curve's coefficient, because we need to ensure the curves we choose are all supersingular
             def test_one_curve(a=field(0), num_batch=num_batch) -> int:
@@ -686,7 +696,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                     # b = get_randint(0, len(MontCurve.batch_start) - 1) # tooo slow for traditinal velu..
                     # NOTE: the last batch will never be done in CTIDH, and it's very slow, so we never test it.
                     b = get_randint(6, len(batch_start)-1) 
-                    print(f'Testing batch {b}, curve a = {a}\n')
+                    print(f'Testing batch {b}, svelu:')
 
                     
                     for _ in range(num_primes_per_batch):
@@ -698,7 +708,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         is_positive_action = True if rand % 2 == 0 else False # Decide which point (P+ or P-) is the kernel point
                         
                         # print(f'\nA = {A}')
-                        print(f'Testing prime l = {L[ind]}.')
+                        # print(f'Testing prime l = {L[ind]}.')
                         # print(f'is_positive_action = {is_positive_action}')
 
                         P = (field(0), field(1))
@@ -751,7 +761,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                             sage_P.set_order(L[ind]) 
                             self.assertEqual((ZZ(L[ind]) * sage_P).is_zero(), True) # check sage_P's order == L[ind]
                             if L[ind] <= 200: # l <= 200 use traditional velu
-                                sage_phi = sage_Ea.isogeny(kernel=sage_P, model="montgomery", check=False)
+                                sage_phi = sage_Ea.isogeny(kernel=sage_P, model="montgomery", degree=L[ind], check=False)
                             else:
                                 sage_phi = sage_Ea.isogeny(kernel=sage_P, model="montgomery", algorithm='velusqrt', check=False)
                             sage_a_new = sage_phi.codomain().a2()
@@ -814,21 +824,13 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         self.assertEqual(sqr_counts[0], sqr_counts[j])
                         self.assertEqual(pow_counts[0], pow_counts[j])
                 
-                    if L[ind] <= MontIsogeny.HYBRID_BOUND:
-                        print('hybrid bound: {MontIsogeny.HYBRID_BOUND}')
-                        print("tvelu")
-                        print(f"add_count:{mul_counts[0]}")
-                        print(f"mul_count:{mul_counts[0]}")
-                        print(f"sqr_count:{sqr_counts[0]}")
-                        print(f"pow_count:{pow_counts[0]}")
-                        print("#########")
-                    else:
-                        print("svelu")
-                        print(f"add_count:{mul_counts[0]}")
-                        print(f"mul_count:{mul_counts[0]}")
-                        print(f"sqr_count:{sqr_counts[0]}")
-                        print(f"pow_count:{pow_counts[0]}")
-                        print("#########")
+                    self.assertTrue(L[ind] >= MontIsogeny.HYBRID_BOUND) # ensure we test square-root velu, not traditional velu
+                    print(f"add_count:{mul_counts[0]}, "
+                          f"mul_count:{mul_counts[0]}, "
+                          f"sqr_count:{sqr_counts[0]}, "
+                          f"pow_count:{pow_counts[0]}, "
+                    )
+                    print("#########")
                             
                     return int(a_new)
                 
