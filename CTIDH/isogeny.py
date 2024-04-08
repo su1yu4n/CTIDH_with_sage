@@ -22,7 +22,7 @@ def doc(s):
 
 # Velu and Velusqrt formula that compute small odd prime degree isogeny.
 def MontgomeryIsogeny(formula_name='tvelu', uninitialized = False):
-    cutoff = 103
+    cutoff = 113    # p2048_CTIDH's step info start from L[27] = 113
     cutoff_string = f' with cutoff ell <= {cutoff}' if formula_name == 'hvelu' else ''
     NAME = 'Isogeny class using the %s Velu\'s formulae%s' % ({'tvelu':'traditional', 'svelu':'square-root', 'hvelu':'hybrid'}[formula_name], cutoff_string)
 
