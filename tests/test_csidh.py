@@ -133,7 +133,8 @@ class TestCSIDH(unittest.TestCase):
         for instance in self.CSIDH_instances:
             test_one_CSIDH_instance(instance)
 
-
+           
+    # NOTE: this takes about 300s on my laptop
     def test_random_boundedl1(self):
         def phi_x_y(x, y) -> int:
             up = min(x, y)
@@ -159,8 +160,8 @@ class TestCSIDH(unittest.TestCase):
                 if keyspace > 5000: # tooo slow
                     return
 
-                avg_num_per_key = 100 if keyspace < 500 else 50
-                bias = 0.25*avg_num_per_key if keyspace < 500 else 0.35*avg_num_per_key
+                avg_num_per_key = 200 if keyspace < 1000 else 100
+                bias = 0.25*avg_num_per_key if keyspace < 1000 else 0.35*avg_num_per_key
                 num_ei = avg_num_per_key * keyspace
                 
                 # print(f'num_ei = {num_ei}')
@@ -187,10 +188,7 @@ class TestCSIDH(unittest.TestCase):
                     msg=f"Too many keys' number out of bias, batch {b}, cardinality of keyspace = {keyspace}"
                 )
             
-            # NOTE: keyspace = 8989 takes 500s, too slow for a daily test. 
-            # But it has been already tested.
-            # for b in range(0, 5): 
-            for b in range(0, 3):
+            for b in range(0, 5):
                 test_one_batch(b)
 
     # NOTE: I have run it with num_sk = 50 and that took more than 2h
