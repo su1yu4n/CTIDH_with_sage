@@ -100,11 +100,16 @@ class CSIDH:
                 e[i] -= 1
 
             reject = 0
+            # NOTE: This is the setting of original CTIDH, but I think the bias is a little big
+            counter = Ni-mi
             s = get_randint(-(2 ** (Ni - 1)), 2 ** (Ni - 1) - 1)
             for i in range(0, Ni):
-                if s & 1 == 1:
+                ei_zero_mask = e[i] == 0
+                counter -= ei_zero_mask
+                sbit = s&1
+                if sbit:
                     e[i] = -e[i]
-                    reject |= e[i] == 0
+                reject |= (counter < 0) & ei_zero_mask & sbit
                 s >>= 1
             if reject:
                 continue
