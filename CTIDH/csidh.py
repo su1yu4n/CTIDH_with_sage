@@ -129,6 +129,10 @@ class CSIDH:
         return sk
 
     def derive(self, sk: list, pk: int) -> int:
+        if pk<0:
+            raise ValueError(f"Invalid public key (smaller than 0): {pk} < 0.")
+        if self.field(pk) == 2 or self.field(pk) == -2:
+            raise ValueError(f"Invalid public key (singular curve): {pk}.")
         if not self.is_supersingular(pk):
             raise ValueError(f"the public key: {pk} is not supersingular!")
         return self.group_action(pk, sk)
