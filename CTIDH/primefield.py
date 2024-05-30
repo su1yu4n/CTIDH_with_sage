@@ -5,6 +5,7 @@ from .utils import bitlength, hamming_weight, memoize, CMOV
 
 import copy
 from math import ceil
+
 proof.arithmetic(False)
 
 
@@ -59,7 +60,6 @@ def PrimeField(p: int, fast_kronecker=False):
                 raise TypeError(
                     "Cannot convert {} type {} to a ZModPrime!".format(type(elem), elem)
                 )
-
 
         def __add__(self, other):
             ZModPrime.add_count += 1
@@ -139,21 +139,23 @@ def PrimeField(p: int, fast_kronecker=False):
             """
             if e == 0:
                 return ZModPrime(1)
-            
-            elif e > 0: # e > 0
+
+            elif e > 0:  # e > 0
                 ZModPrime.sqr_count += bitlength(e) - 1
                 ZModPrime.mul_count += hamming_weight(e) - 1
-                if e > 2: # e > 2
+                if e > 2:  # e > 2
                     ZModPrime.pow_count += 1
-                return ZModPrime(self.value ** e)
+                return ZModPrime(self.value**e)
 
             # Seems that this is the only case when e<0 in CSIDH.
             elif e == -1:
                 # ~ indicate invert
                 return ~self
-            
+
             else:
-                raise NotImplementedError('Unexpected behavior: performing a ** e, e < -1 in CTIDH.')
+                raise NotImplementedError(
+                    "Unexpected behavior: performing a ** e, e < -1 in CTIDH."
+                )
 
         def __ipow__(self, e: int):
             if e > 0:
@@ -167,45 +169,49 @@ def PrimeField(p: int, fast_kronecker=False):
                     ZModPrime.mul_count += hamming_weight(e) - 1
                 self.value **= e
                 return self
-            
+
             elif e == 0:  # e == 0
                 self.value = 1
                 return self
-            
-            else: # e < 0
-                raise NotImplementedError('Unexpected behavior: performing a **= e, e < 0 in CTIDH.')
 
-        def safe_pow(self, e:int, e_maxbitlen:int):
+            else:  # e < 0
+                raise NotImplementedError(
+                    "Unexpected behavior: performing a **= e, e < 0 in CTIDH."
+                )
+
+        def safe_pow(self, e: int, e_maxbitlen: int):
             """Timing-safe powmod. Return a ZModPrime with value self.value ** e
 
             Args:
                 e (int): the exponent
-                e_maxbitlen (int): the possible max value of e's bitlength. 
+                e_maxbitlen (int): the possible max value of e's bitlength.
 
             NOTE: To achieve timing-safe property, this function pretends to compute the case exponent equals 2**e_maxbitlen
 
             """
             ZModPrime.pow_count += 1
-            
+
             a = self
-            tmp1 = copy.deepcopy(self) # a ** padded_e
-            tmp2 = copy.deepcopy(self) 
+            tmp1 = copy.deepcopy(self)  # a ** padded_e
+            tmp2 = copy.deepcopy(self)
             e_bitlen = bitlength(e)
 
             padded_e = e << (e_maxbitlen - e_bitlen)
             ans = copy.deepcopy(self)
             # tmp and ans have initial value a
             # start from the second MSB
-            for i in range(2, e_maxbitlen+1):
-                tmp1 = tmp1 ** 2
+            for i in range(2, e_maxbitlen + 1):
+                tmp1 = tmp1**2
                 tmp2 = tmp1 * a
-                should_mov = (padded_e >> (e_maxbitlen - i)) & 1 # if 1 then mov, if 0 then don't move
+                should_mov = (
+                    padded_e >> (e_maxbitlen - i)
+                ) & 1  # if 1 then mov, if 0 then don't move
                 tmp1 = CMOV(tmp1, tmp2, should_mov)
 
                 ans = CMOV(ans, tmp1, i <= e_bitlen)
-            
+
             return ans
-                
+
         def __invert__(self):
             # TODO: write a faster constant-time invert.
             # Currently we use self.x**(p-2).
@@ -218,10 +224,10 @@ def PrimeField(p: int, fast_kronecker=False):
         def __eq__(self, other):
             other = get_value(other)
             return self.value == other
-        
+
         def __str__(self):
-            return 'ZModPrime {} mod {}'.format(self.value, prime_name)
-        
+            return "ZModPrime {} mod {}".format(self.value, prime_name)
+
         def __repr__(self):
             return str(self)
 
@@ -234,21 +240,23 @@ def PrimeField(p: int, fast_kronecker=False):
             return ret
 
         def is_square(self) -> bool:
-            legendre_symbol = self ** ( (ZModPrime._p - 1) // 2)
+            legendre_symbol = self ** ((ZModPrime._p - 1) // 2)
             return True if legendre_symbol == 1 else False
 
         def _kronecker(self, w=32):
-            def jumpdivsteps(n, l, w, theta, f, g):
-                assert f % 2 == 1 and f > 0 and l <= (w - 2), "jumpdivsters assertion failure"
+            def jumpdivsteps(n, l, w, delta, f, g):
+                assert (
+                    f % 2 == 1 and f > 0 and l <= (w - 2)
+                ), "jumpdivsters assertion failure"
                 t = 0
-                for i in range(1, ceil(n/l) + 1):
-                    f_ = f % (2 ** w)
-                    g_ = g % (2 ** w)
+                for i in range(1, ceil(n / l) + 1):
+                    f_ = f % (2**w)
+                    g_ = g % (2**w)
                     u = 0
                     a_i, b_i, c_i, d_i = 1, 0, 0, 1
                     for j in range(1, l + 1):
                         y = f_
-                        d_0 = theta >= 0
+                        d_0 = delta >= 0
                         m_1 = g_ % 2
                         m_0 = d_0 & m_1
                         t_0 = f_
@@ -270,14 +278,14 @@ def PrimeField(p: int, fast_kronecker=False):
                         c_i = 2 * c_i
                         d_i = 2 * d_i
                         if m_0 > 0:
-                            theta = -theta
+                            delta = 2 - delta
                         elif m_0 == 0:
-                            theta = theta + 1
+                            delta = 2 + delta
                         u += ((y & f_) ^ (f_ >> 1)) & 2
                         if c_i >= 0:
-                            u += ((u & 1) ^ 0)
+                            u += (u & 1) ^ 0
                         else:
-                            u += ((u & 1) ^ 1)
+                            u += (u & 1) ^ 1
                     g, f = (a_i * g + b_i * f) >> l, (c_i * g + d_i * f) >> l
                     t = (t + u) % 4
                     if f >= 0:
@@ -285,8 +293,9 @@ def PrimeField(p: int, fast_kronecker=False):
                     else:
                         t = t + ((t % 2) ^ 1) % 4
                 t = (t + (t % 2)) % 4
-                return theta, f, g, 1 - t
-            
+                return delta, f, g, 1 - t
+                # TODO: Avoid unnecessary iteration in the last round of jumpdivstep
+                # NOTE: Also need to change the updation
             g = self.get_int_value()
             f = ZModPrime._p
 
@@ -306,27 +315,25 @@ def PrimeField(p: int, fast_kronecker=False):
                 f //= 2
                 if g % 2 == 0:
                     u = 0
-                if (g % 8) == 3 or (g % 8) ==5:
+                if (g % 8) == 3 or (g % 8) == 5:
                     u = -u
-            theta = 0
+            delta = 1
             l = w - 2
-            theta_, f_, g_, k = jumpdivsteps(n, l, w, theta, abs(f), g)
+            delta_, f_, g_, k = jumpdivsteps(n, l, w, delta, abs(f), g)
             if abs(f_) != 1:
                 return 0
             else:
                 return u * k
 
-        def is_square_fast(self, w=32) -> bool:        
+        def is_square_fast(self, w=32) -> bool:
             return True if self._kronecker(w=w) == 1 else False
-        
+
         if fast_kronecker:
             is_square = is_square_fast
-            
 
         @classmethod
         def get_random(cls):
             return ZModPrime(GFp.random_element())
-
 
         @classmethod
         def reset_runtime(cls):
@@ -354,7 +361,7 @@ def PrimeField(p: int, fast_kronecker=False):
                 end="\n",
             )
 
-    prime_name = 'p1024_CTIDH' if p.bit_length() <= 1025 else 'p2048_CTIDH'
-    ZModPrime.__name__ = f'ZModPrime with p = {prime_name}'
+    prime_name = "p1024_CTIDH" if p.bit_length() <= 1025 else "p2048_CTIDH"
+    ZModPrime.__name__ = f"ZModPrime with p = {prime_name}"
 
     return ZModPrime
