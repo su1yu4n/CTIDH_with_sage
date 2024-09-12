@@ -215,7 +215,7 @@ def PrimeField(p: int, fast_kronecker=False):
         def __invert__(self):
             # TODO: write a faster constant-time invert.
             # Currently we use self.x**(p-2).
-            self.inv_count += 1
+            ZModPrime.inv_count += 1
             return self ** (ZModPrime._p - 2)
 
         def __neg__(self):

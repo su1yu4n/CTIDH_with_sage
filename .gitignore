@@ -105,3 +105,6 @@ GitHub.sublime-settings
 !.vscode/extensions.json 
 
 .history
+
+# Logs and experiment data
+*.log
