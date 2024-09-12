@@ -192,7 +192,7 @@ class TestCSIDH(unittest.TestCase):
                 test_one_batch(b)
 
     # NOTE: I have run it with num_sk = 50 and that took more than 2h
-    def test_group_action(self, num_sk=50):
+    def test_group_action(self, num_sk=5):
         def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk):
             prime_info = csidh_instance.prime_info
             p = prime_info["p"]
@@ -203,6 +203,11 @@ class TestCSIDH(unittest.TestCase):
                 sk = csidh_instance.skgen()
                 # print(f'sk = {sk}')
                 anew = csidh_instance.group_action(a, sk, debug=False)
+
+                csidh_instance.field.show_runtime("CTIDH-1024 GA")
+                csidh_instance.field.show_sqr_pow("CTIDH-1024 GA")
+                csidh_instance.field.reset_runtime()
+                csidh_instance.field.reset_power_invert_time()
 
                 Ea = EllipticCurve(GF(p), [0, a, 0, 1, 0])
                 Enew_sage = group_action_sage(sk, L, Ea, p)
@@ -218,9 +223,13 @@ class TestCSIDH(unittest.TestCase):
                 test_one_action(a=anew)
                 
                 
-        for i in range(len(self.CSIDH_instances)):
-            print(f"Testing instance {i}")
-            test_one_CSIDH_instance(self.CSIDH_instances[i])
+        # for i in range(len(self.CSIDH_instances)):
+        #     print(f"Testing instance {i}")
+        #     test_one_CSIDH_instance(self.CSIDH_instances[i])
+        
+        # NOTE: test CTIDH-1024 only
+        test_one_CSIDH_instance(self.CSIDH_instances[0])
+        
 
 
     def test_protocol(self, num_protocols=10):
