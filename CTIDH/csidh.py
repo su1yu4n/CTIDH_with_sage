@@ -193,8 +193,20 @@ class CSIDH:
                 if batchtodo[i] != 0:
                     I.append(i)  # 将i插入I的尾部
             k = len(I)
-
-            # NOTE: Here we don't optimize the order, i.e. I is not shuffled. 
+            # Now I is in ascending order, eg. 0 1 2 3 4 5
+            # Optimize the order of I       
+            assert k > 0
+            tmp_I = I[-2::-1] + I[-1:]
+            # Now tmp_I looks like 4 3 2 1 0 5
+            if k >= 4:
+                I = tmp_I[0:1] + tmp_I[2:-1]
+                # Now I is 4 2 1 0
+                I += tmp_I[1:2]
+                # Now I is 4 2 1 0 3
+                I += tmp_I[-1:]
+            else:
+                I = tmp_I.copy()
+            # Now I looks like 4 2 1 0 3 5
             # 初始化 CTIDH inner loop的J和epsilon
             J = [
                 batch_start[I[i]] for i in range(0, k)
