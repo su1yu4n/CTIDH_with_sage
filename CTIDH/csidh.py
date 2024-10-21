@@ -194,7 +194,7 @@ class CSIDH:
                     I.append(i)  # 将i插入I的尾部
             k = len(I)
 
-            # 略：按一种特定的方式打乱I，代码中说是一种优化，但应该对效率没影响
+            # NOTE: Here we don't optimize the order, i.e. I is not shuffled. 
             # 初始化 CTIDH inner loop的J和epsilon
             J = [
                 batch_start[I[i]] for i in range(0, k)
