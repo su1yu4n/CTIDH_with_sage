@@ -92,21 +92,21 @@ class TestCSIDH(unittest.TestCase):
         # )
         # self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_fast_kronecker)
 
-        CSIDH_1024_hvelu_Ladder_original_slow_legendre = CSIDH( # in fact this slow legendre is faster in this python implementation
+        CSIDH_1024_hvelu_SDAC_original_slow_legendre = CSIDH( # in fact this slow legendre is faster in this python implementation
             'p1024_CTIDH', 
             'hvelu',
-            SDAC=False,
+            SDAC=True,
             fast_kronecker=False
         )
-        self.CSIDH_instances.append(CSIDH_1024_hvelu_Ladder_original_slow_legendre)
+        self.CSIDH_instances.append(CSIDH_1024_hvelu_SDAC_original_slow_legendre)
 
-        CSIDH_2048_hvelu_SDAC_original_fast_kronecker = CSIDH(
+        CSIDH_2048_hvelu_SDAC_original_slow_legendre = CSIDH(
             'p2048_CTIDH', 
             'hvelu',
             SDAC=True,
-            fast_kronecker=True
+            fast_kronecker=False
         )
-        self.CSIDH_instances.append(CSIDH_2048_hvelu_SDAC_original_fast_kronecker)
+        self.CSIDH_instances.append(CSIDH_2048_hvelu_SDAC_original_slow_legendre)
         return super().setUp()
 
     # NOTE: Randomness of skgen tested in test_randomboundl1
