@@ -205,7 +205,7 @@ class TestCSIDH(unittest.TestCase):
                 anew = csidh_instance.group_action(a, sk, debug=False)
 
                 csidh_instance.field.show_runtime("CTIDH-1024 GA")
-                csidh_instance.field.show_sqr_pow("CTIDH-1024 GA")
+                csidh_instance.field.show_power_invert_time("CTIDH-1024 GA")
                 csidh_instance.field.reset_runtime()
                 csidh_instance.field.reset_power_invert_time()
 

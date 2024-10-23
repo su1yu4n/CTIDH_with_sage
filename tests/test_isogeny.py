@@ -825,9 +825,10 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                         self.assertEqual(pow_counts[0], pow_counts[j])
                 
                     self.assertTrue(L[ind] >= MontIsogeny.HYBRID_BOUND) # ensure we test square-root velu, not traditional velu
-                    print(f"add_count:{mul_counts[0]}, "
+                    print(
                           f"mul_count:{mul_counts[0]}, "
                           f"sqr_count:{sqr_counts[0]}, "
+                          f"add_count:{add_counts[0]}, "
                           f"pow_count:{pow_counts[0]}, "
                     )
                     print("#########")

@@ -355,7 +355,7 @@ def PrimeField(p: int, fast_kronecker=False):
             )
 
         @classmethod
-        def show_sqr_pow(cls, label: str):
+        def show_power_invert_time(cls, label: str):
             print(
                 "| %s: %2dP + %2dI" % (label, cls.pow_count, cls.inv_count),
                 end="\n",
