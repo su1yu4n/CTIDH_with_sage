@@ -42,10 +42,12 @@ class CSIDH:
         )
         self.field = self.curve.field
 
-        if formula_name == 'tvelu':
-            self.prime_info = read_prime_info_for_tvelu_test(prime_name)
-        else:
-            self.prime_info = read_prime_info(prime_name)
+        # if formula_name == 'tvelu':
+        #     # self.prime_info = read_prime_info_for_tvelu_test(prime_name)
+        #     self.prime_info = read_prime_info(prime_name)
+        # else:
+        #     self.prime_info = read_prime_info(prime_name)
+        self.prime_info = read_prime_info(prime_name)
 
     def keygen(self) -> tuple:
         """Generate public key and private key.

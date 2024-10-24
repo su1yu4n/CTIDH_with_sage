@@ -84,13 +84,13 @@ class TestCSIDH(unittest.TestCase):
         # )
         # self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
         
-        # CSIDH_1024_tvelu_SDAC_original_fast_kronecker = CSIDH(
-        #     'p1024_CTIDH', 
-        #     'tvelu',
-        #     SDAC=True,
-        #     fast_kronecker=True
-        # )
-        # self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_fast_kronecker)
+        CSIDH_1024_tvelu_SDAC_original_fast_kronecker = CSIDH(
+            'p1024_CTIDH', 
+            'tvelu',
+            SDAC=True,
+            fast_kronecker=True
+        )
+        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_fast_kronecker)
 
         CSIDH_1024_hvelu_SDAC_original_slow_legendre = CSIDH( # in fact this slow legendre is faster in this python implementation
             'p1024_CTIDH', 
