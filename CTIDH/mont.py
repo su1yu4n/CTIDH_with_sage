@@ -102,7 +102,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original",
 
             Tplus_x = P
             Tminus_x = -M
-            ctrl = not T.is_square()
+            ctrl = not T.is_square(fast_kronecker)
             Tplus_x, Tminus_x = CSWAP(Tplus_x, Tminus_x, ctrl)
 
             Tplus_z = D

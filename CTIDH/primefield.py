@@ -9,6 +9,9 @@ from math import ceil
 proof.arithmetic(False)
 
 
+# TODO: remove fast_kronecker in argument and member variable. 
+# NOTE: Also correct PrimeField caller!
+# is_square should add new argument(fast_kronecker: bool)
 @memoize
 def PrimeField(p: int, fast_kronecker=False):
     if not is_prime(p):
@@ -47,6 +50,7 @@ def PrimeField(p: int, fast_kronecker=False):
         inv_count = 0
         _p = p
         # p = p
+        use_fast_kronecker = fast_kronecker
 
         # self.value always has the type IntegerMod_gmp when p is large or IntegerMod_int
         def __init__(self, elem):
@@ -239,7 +243,12 @@ def PrimeField(p: int, fast_kronecker=False):
             ret.value = self.value
             return ret
 
-        def is_square(self) -> bool:
+        def is_square(self, use_fast_kronecker) -> bool:
+            if use_fast_kronecker:
+                return self.is_square_fast_kronecker()
+            return self.is_square_slow_euler()
+            
+        def is_square_slow_euler(self) -> bool:
             legendre_symbol = self ** ((ZModPrime._p - 1) // 2)
             return True if legendre_symbol == 1 else False
 
@@ -325,11 +334,12 @@ def PrimeField(p: int, fast_kronecker=False):
             else:
                 return u * k
 
-        def is_square_fast(self, w=32) -> bool:
+        def is_square_fast_kronecker(self, w=32) -> bool:
             return True if self._kronecker(w=w) == 1 else False
 
-        if fast_kronecker:
-            is_square = is_square_fast
+        # TODO: delete this 
+        # if fast_kronecker:
+        #     is_square = is_square_fast
 
         @classmethod
         def get_random(cls):
