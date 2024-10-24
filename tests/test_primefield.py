@@ -233,24 +233,24 @@ class TestPrimeField(unittest.TestCase):
 
     # num_of_test used to be 10**4, and have passed the test several times.
     # Change to 100 to make the test faster
-    def test_is_square(self, num_test = 500):
+    def test_is_square_slow_euler(self, num_test = 500):
         for _ in range(num_test):
             a = Fp2048.get_random()
-            self.assertEqual(a.is_square(), kronecker_symbol(a.value, p2048) == 1)
+            self.assertEqual(a.is_square_slow_euler(), kronecker_symbol(a.value, p2048) == 1)
 
         for _ in range(num_test):
             a = Fp1024.get_random()
-            self.assertEqual(a.is_square(), kronecker_symbol(a.value, p1024) == 1)
+            self.assertEqual(a.is_square_slow_euler(), kronecker_symbol(a.value, p1024) == 1)
 
 
     def test_is_square_fast(self, num_test=500):
         for _ in range(num_test):
             a = Fp2048.get_random()
-            self.assertEqual(a.is_square_fast(), kronecker_symbol(a.value, p2048) == 1)
+            self.assertEqual(a.is_square_fast_kronecker(), kronecker_symbol(a.value, p2048) == 1)
 
         for _ in range(num_test):
             a = Fp1024.get_random()
-            self.assertEqual(a.is_square_fast(), kronecker_symbol(a.value, p1024) == 1)
+            self.assertEqual(a.is_square_fast_kronecker(), kronecker_symbol(a.value, p1024) == 1)
         # print('Testing p2048:')
         # err_count = 0
         # for _ in range(num_test):

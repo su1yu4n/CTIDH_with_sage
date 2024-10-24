@@ -25,7 +25,7 @@ def MontgomeryCurve(prime_name="p1024_CTIDH", SDAC=False, validation="original",
     batch_maxdaclen = prime_info["batch_maxdaclen"]
     # batch_bound = prime_info["batch_bound"]
 
-    field = PrimeField(p, fast_kronecker=fast_kronecker)
+    field = PrimeField(p)
 
     type_field = type(field(2))
 

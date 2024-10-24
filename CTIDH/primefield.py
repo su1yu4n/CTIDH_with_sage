@@ -9,11 +9,8 @@ from math import ceil
 proof.arithmetic(False)
 
 
-# TODO: remove fast_kronecker in argument and member variable. 
-# NOTE: Also correct PrimeField caller!
-# is_square should add new argument(fast_kronecker: bool)
 @memoize
-def PrimeField(p: int, fast_kronecker=False):
+def PrimeField(p: int):
     if not is_prime(p):
         raise ArithmeticError("Cannot construct Fp: p is not a prime!")
 
@@ -50,7 +47,6 @@ def PrimeField(p: int, fast_kronecker=False):
         inv_count = 0
         _p = p
         # p = p
-        use_fast_kronecker = fast_kronecker
 
         # self.value always has the type IntegerMod_gmp when p is large or IntegerMod_int
         def __init__(self, elem):
@@ -336,10 +332,6 @@ def PrimeField(p: int, fast_kronecker=False):
 
         def is_square_fast_kronecker(self, w=32) -> bool:
             return True if self._kronecker(w=w) == 1 else False
-
-        # TODO: delete this 
-        # if fast_kronecker:
-        #     is_square = is_square_fast
 
         @classmethod
         def get_random(cls):

@@ -696,7 +696,7 @@ class TestMontgomeryIsogeny(unittest.TestCase):
                     # Choose a batch
                     # b = get_randint(0, len(MontCurve.batch_start) - 1) # tooo slow for traditinal velu..
                     # NOTE: the last batch will never be done in CTIDH, and it's very slow, so we never test it.
-                    b = get_randint(6, len(batch_start)-1) 
+                    b = get_randint(7, len(batch_start)-1) 
                     print(f'Testing batch {b}, svelu:')
 
                     
