@@ -47,6 +47,7 @@ def PrimeField(p: int):
         inv_count = 0
         _p = p
         # p = p
+        prime_name = "p1024_CTIDH" if p.bit_length() <= 1025 else "p2048_CTIDH"
 
         # self.value always has the type IntegerMod_gmp when p is large or IntegerMod_int
         def __init__(self, elem):
@@ -226,7 +227,7 @@ def PrimeField(p: int):
             return self.value == other
 
         def __str__(self):
-            return "ZModPrime {} mod {}".format(self.value, prime_name)
+            return "ZModPrime {} mod {}".format(self.value, ZModPrime.prime_name)
 
         def __repr__(self):
             return str(self)
@@ -245,7 +246,19 @@ def PrimeField(p: int):
             return self.is_square_slow_euler()
             
         def is_square_slow_euler(self) -> bool:
-            legendre_symbol = self ** ((ZModPrime._p - 1) // 2)
+            # NOTE: we manually adjust the cost wrt CTIDH original source code (short addition chain)
+            # legendre_symbol = self.value ** ((ZModPrime._p - 1) // 2)
+            legendre_symbol = pow(self.value, (ZModPrime._p - 1)//2, ZModPrime._p)
+            # euler cost from CTIDH original source code (shorter addition chain). NOT sqr-and-mul!!
+            if ZModPrime.prime_name.startswith("p1024"):
+                ZModPrime.mul_count += 174
+                ZModPrime.sqr_count += 1013
+            elif ZModPrime.prime_name.startswith("p2048"):
+                ZModPrime.mul_count += 316
+                ZModPrime.sqr_count += 2040
+            else:
+                raise ValueError('Unexpected prime_name')
+            ZModPrime.pow_count += 1
             return True if legendre_symbol == 1 else False
 
         def _kronecker(self, w=32):
@@ -331,6 +344,21 @@ def PrimeField(p: int):
                 return u * k
 
         def is_square_fast_kronecker(self, w=32) -> bool:
+            # NOTE: The algorithm does not really do mul and sqr. 
+            # The cost is virtually converted into mul and sqr counts according to the cost ratio.
+            # cost ratio from eprint 2023/1261
+            # euler cost from CTIDH source code (shorter addition chain). NOT sqr-and-mul!!
+            if ZModPrime.prime_name.startswith("p1024"):
+                euler_mul_count = 174
+                euler_sqr_count = 1013
+                ratio = 0.7852
+            elif ZModPrime.prime_name.startswith("p2048"):
+                euler_mul_count = 316
+                euler_sqr_count = 2040
+                ratio = 0.6826
+            ZModPrime.mul_count += int(euler_mul_count * ratio)
+            ZModPrime.sqr_count += int(euler_sqr_count * ratio)
+            
             return True if self._kronecker(w=w) == 1 else False
 
         @classmethod
@@ -363,7 +391,6 @@ def PrimeField(p: int):
                 end="\n",
             )
 
-    prime_name = "p1024_CTIDH" if p.bit_length() <= 1025 else "p2048_CTIDH"
-    ZModPrime.__name__ = f"ZModPrime with p = {prime_name}"
+    ZModPrime.__name__ = f"ZModPrime with p = {ZModPrime.prime_name}"
 
     return ZModPrime
