@@ -18,7 +18,7 @@ def isogeny_sage(E, p, l, inverse_action):
         # assert l * P == E(0) and P != E(0)
         return P
     
-    if inverse_action == True:
+    if inverse_action:
         a = E.a2()
         E = EllipticCurve(E.base_field(), [0, -a, 0, 1, 0])
     E.set_order(p+1)
@@ -30,7 +30,7 @@ def isogeny_sage(E, p, l, inverse_action):
         phi = E.isogeny(kernel=P, model="montgomery", degree=l, check=False)
     E_new = phi.codomain()
 
-    if inverse_action == True:
+    if inverse_action:
         a_new = E_new.a2()
         E_new = EllipticCurve(E.base_field(), [0, -a_new, 0, 1, 0])
 
@@ -71,19 +71,6 @@ class TestCSIDH(unittest.TestCase):
     CSIDH_instances = []
 
     def setUp(self) -> None:
-        # CSIDH_1024_tvelu_ladder_original = CSIDH(
-        #     'p1024_CTIDH', 
-        #     'tvelu',
-        # )        
-        # self.CSIDH_instances.append(CSIDH_1024_tvelu_ladder_original)
-
-        # CSIDH_1024_tvelu_SDAC_original_slow_legendre = CSIDH(
-        #     'p1024_CTIDH', 
-        #     'tvelu',
-        #     SDAC=True
-        # )
-        # self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
-        
         CSIDH_1024_tvelu_SDAC_original_fast_kronecker = CSIDH(
             'p1024_CTIDH', 
             'tvelu',
@@ -91,22 +78,48 @@ class TestCSIDH(unittest.TestCase):
             fast_kronecker=True
         )
         self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_fast_kronecker)
-
-        CSIDH_1024_hvelu_SDAC_original_slow_legendre = CSIDH( # in fact this slow legendre is faster in this python implementation
+        
+        CSIDH_1024_tvelu_SDAC_original_slow_legendre= CSIDH(
             'p1024_CTIDH', 
-            'hvelu',
+            'tvelu',
             SDAC=True,
             fast_kronecker=False
         )
-        self.CSIDH_instances.append(CSIDH_1024_hvelu_SDAC_original_slow_legendre)
-
-        CSIDH_2048_hvelu_SDAC_original_slow_legendre = CSIDH(
+        self.CSIDH_instances.append(CSIDH_1024_tvelu_SDAC_original_slow_legendre)
+        
+        CSIDH_2048_tvelu_SDAC_original_fast_kronecker = CSIDH(
             'p2048_CTIDH', 
-            'hvelu',
+            'tvelu',
+            SDAC=True,
+            fast_kronecker=True
+        )
+        self.CSIDH_instances.append(CSIDH_2048_tvelu_SDAC_original_fast_kronecker)
+        
+        CSIDH_2048_tvelu_SDAC_original_slow_legendre = CSIDH(
+            'p2048_CTIDH', 
+            'tvelu',
             SDAC=True,
             fast_kronecker=False
         )
-        self.CSIDH_instances.append(CSIDH_2048_hvelu_SDAC_original_slow_legendre)
+        self.CSIDH_instances.append(CSIDH_2048_tvelu_SDAC_original_slow_legendre)
+        
+
+
+        # CSIDH_1024_hvelu_SDAC_original_slow_legendre = CSIDH( # in fact this slow legendre is faster in this python implementation
+        #     'p1024_CTIDH', 
+        #     'hvelu',
+        #     SDAC=True,
+        #     fast_kronecker=False
+        # )
+        # self.CSIDH_instances.append(CSIDH_1024_hvelu_SDAC_original_slow_legendre)
+
+        # CSIDH_2048_hvelu_SDAC_original_slow_legendre = CSIDH(
+        #     'p2048_CTIDH', 
+        #     'hvelu',
+        #     SDAC=True,
+        #     fast_kronecker=False
+        # )
+        # self.CSIDH_instances.append(CSIDH_2048_hvelu_SDAC_original_slow_legendre)
         return super().setUp()
 
     # NOTE: Randomness of skgen tested in test_randomboundl1
@@ -193,19 +206,19 @@ class TestCSIDH(unittest.TestCase):
 
     # NOTE: I have run it with num_sk = 50 and that took more than 2h
     def test_group_action(self, num_sk=5):
-        def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk):
+        def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk, name='1024'):
             prime_info = csidh_instance.prime_info
             p = prime_info["p"]
             L = prime_info["L"]
 
-            def test_one_action(a=0):
+            def test_one_action(a=0, name='1024'):
                 # print(f'a={a}')
                 sk = csidh_instance.skgen()
                 # print(f'sk = {sk}')
                 anew = csidh_instance.group_action(a, sk, debug=False)
 
-                csidh_instance.field.show_runtime("CTIDH-1024 GA")
-                csidh_instance.field.show_power_invert_time("CTIDH-1024 GA")
+                csidh_instance.field.show_runtime("CTIDH-" + name + " GA")
+                csidh_instance.field.show_power_invert_time("CTIDH-" + name + " GA")
                 csidh_instance.field.reset_runtime()
                 csidh_instance.field.reset_power_invert_time()
 
@@ -219,8 +232,8 @@ class TestCSIDH(unittest.TestCase):
 
             for i in range(num_sk):
                 print(f'Running action {i}')
-                anew = test_one_action(a=0)
-                test_one_action(a=anew)
+                anew = test_one_action(a=0, name=name)
+                test_one_action(a=anew, name=name)
                 
                 
         # for i in range(len(self.CSIDH_instances)):
@@ -228,7 +241,11 @@ class TestCSIDH(unittest.TestCase):
         #     test_one_CSIDH_instance(self.CSIDH_instances[i])
         
         # NOTE: test CTIDH-1024 only
-        test_one_CSIDH_instance(self.CSIDH_instances[0])
+        test_one_CSIDH_instance(self.CSIDH_instances[0]) # fast kro
+        # test_one_CSIDH_instance(self.CSIDH_instances[1]) # slow legendre
+        # test_one_CSIDH_instance(self.CSIDH_instances[-1], name='2048') # 2048 slow legendre
+        # test_one_CSIDH_instance(self.CSIDH_instances[-2], name='2048') # 2048 fast kronecker
+        
         
 
 
