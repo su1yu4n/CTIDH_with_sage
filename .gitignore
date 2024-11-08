@@ -107,4 +107,8 @@ GitHub.sublime-settings
 .history
 
 # Logs and experiment data
+logs/*
 *.log
+
+# Plans and ideas
+plans-and-ideas/*
