@@ -216,6 +216,8 @@ class CSIDH:
             else:
                 I = tmp_I.copy()
             # Now I looks like 4 2 1 0 3 5
+            if k >= 4: # not carefully checked, but 2 0 1 3 -> 1 0 2 3
+                I[0], I[-2] = I[-2], I[0]
             # 初始化 CTIDH inner loop的J和epsilon
             J = [
                 batch_start[I[i]] for i in range(0, k)
@@ -248,9 +250,13 @@ class CSIDH:
 
                 T0, T1 = CSWAP(T0, T1, epsilon[i] < 0)
                 if i == 0:
-                    # T0 = [r]T0
-                    T0 = clear_public_prime(T0, A24, I, verbose_level >= 2)
-                    T0 = clear_private_prime(T0, A24, I, J, verbose_level >= 2)
+                    # T0 = [r]T0, T1 = [r]T1
+                    T0 = clear_public_prime(T0, A24, I)
+                    T0 = clear_private_prime(T0, A24, I, J)
+                    if k > 1:
+                        T1 = clear_public_prime(T1, A24, I)
+                        T1 = clear_private_prime(T1, A24, I, J)
+
                 P = deepcopy(T0)
                 # 清理掉当前以外的其他待做素数
                 for j in range(i + 1, k):
@@ -271,8 +277,6 @@ class CSIDH:
                     Tnewlen = 0
                     if i == k - 1:  # 最后一个同源不用推点
                         Tnewlen = 0
-                    elif i == 0:  # 第一个同源只需要推一个点
-                        Tnewlen = 1
                     else:
                         Tnewlen = 2
                     if i == k - 2 and k > 2:  # 倒数第一个同源只需要推一个点
@@ -293,12 +297,6 @@ class CSIDH:
                         verbose(f"affine a={A[0] * A[1] ** (-1)}", level=3)
 
                 # 处理T0和T1：做完小同源之后清掉对应小素数，避免未来重复做
-                if i == 0:
-                    # 第一个小同源做完要出一个新的点，保证T0和T1相互独立
-                    T_plus, T1 = self.curve.elligator(A)
-                    T_plus, T1 = CSWAP(T_plus, T1, epsilon[i] < 0)
-                    T1 = clear_public_prime(T1, A24, I)
-                    T1 = clear_private_prime(T1, A24, I, J)
                 if i == k - 2 and k > 2:
                     T0 = self.curve.xmul_private(T0, A24, J[i])
                     T1 = deepcopy(T0)
