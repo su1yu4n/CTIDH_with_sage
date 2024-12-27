@@ -227,7 +227,7 @@ def PrimeField(p: int):
             return self.value == other
 
         def __str__(self):
-            return "ZModPrime {} mod {}".format(self.value, ZModPrime.prime_name)
+            return "{} mod {}".format(self.value, ZModPrime.prime_name)
 
         def __repr__(self):
             return str(self)

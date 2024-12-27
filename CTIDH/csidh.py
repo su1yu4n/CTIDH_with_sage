@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from sage.misc.verbose import verbose, set_verbose
 from CTIDH.isogeny import MontgomeryIsogeny
 from CTIDH.mont import MontgomeryCurve
 from CTIDH.utils import read_prime_info, read_prime_info_for_tvelu_test
@@ -59,7 +60,6 @@ class CSIDH:
         pk = self.group_action(0, sk)
         return sk, pk
 
-
     def random_boundedl1(self, Ni, mi, b=32):
         if mi == 0:
             return [0] * Ni
@@ -67,9 +67,7 @@ class CSIDH:
         rnum = Ni + mi
         while True:
             # get random Ni+mi b-bit ints
-            r = [
-                get_randint(-(2 ** (b - 1)), 2 ** (b - 1) - 1) for _ in range(rnum)
-            ]
+            r = [get_randint(-(2 ** (b - 1)), 2 ** (b - 1) - 1) for _ in range(rnum)]
             # step2 and step3
             for j in range(0, rnum):
                 r[j] &= ~1
@@ -103,12 +101,12 @@ class CSIDH:
 
             reject = 0
             # NOTE: This is the setting of original CTIDH, but I think the bias is a little big
-            counter = Ni-mi
+            counter = Ni - mi
             s = get_randint(-(2 ** (Ni - 1)), 2 ** (Ni - 1) - 1)
             for i in range(0, Ni):
                 ei_zero_mask = e[i] == 0
                 counter -= ei_zero_mask
-                sbit = s&1
+                sbit = s & 1
                 if sbit:
                     e[i] = -e[i]
                 reject |= (counter < 0) & ei_zero_mask & sbit
@@ -116,7 +114,6 @@ class CSIDH:
             if reject:
                 continue
             return e
-        
 
     def skgen(self):
         batch_bound = self.prime_info["batch_bound"]
@@ -131,7 +128,7 @@ class CSIDH:
         return sk
 
     def derive(self, sk: list, pk: int) -> int:
-        if pk<0:
+        if pk < 0:
             raise ValueError(f"Invalid public key (smaller than 0): {pk} < 0.")
         if self.field(pk) == 2 or self.field(pk) == -2:
             raise ValueError(f"Invalid public key (singular curve): {pk}.")
@@ -139,23 +136,27 @@ class CSIDH:
             raise ValueError(f"the public key: {pk} is not supersingular!")
         return self.group_action(pk, sk)
 
+    def group_action(self, a: int, e: list, verbose_level=0) -> int:
+        set_verbose(verbose_level)
 
-    def group_action(self, a: int, e: list, debug=False) -> int:
         def PointAccept(P, i: int, j: int) -> bool:
             if self.curve.isinfinity(P):
                 return False
             # toss a coin with success probability gamma = (l*(lmin-1)) / (lmin*(l-1))
-            r = get_randint(-2**255, 2**255-1)  # get random 256-bit integer
+            r = get_randint(-(2**255), 2**255 - 1)  # get random 256-bit integer
             lmin = L[batch_start[i]]
             l = L[j]
-            r %= lmin * (l-1) # now r uniformly distributed in [0, lmin*(l-1) - 1]
+            r %= lmin * (l - 1)  # now r uniformly distributed in [0, lmin*(l-1) - 1]
             assert r >= 0
-            if r > l * (lmin-1):
+            if r > l * (lmin - 1):
                 return False
             return True
 
-        def clear_public_prime(T, A24, I: list):
-            T = self.curve.xdbl(T, A24); T = self.curve.xdbl(T, A24)
+        def clear_public_prime(T, A24, I: list, do_verbose=False):
+            if do_verbose:
+                verbose(f"In clear_public_prime. Input: {T=}")
+            T = self.curve.xdbl(T, A24)
+            T = self.curve.xdbl(T, A24)
             for i in range(0, batch_num):
                 if i in I:
                     continue
@@ -163,14 +164,20 @@ class CSIDH:
                     T = self.curve.xmul_public(
                         T, A24, j
                     )  # public scalar mult： T = L[j] * T
+            if do_verbose:
+                verbose(f"Output: {T=}")
             return T
 
-        def clear_private_prime(T, A24, I: list, J: list):
+        def clear_private_prime(T, A24, I: list, J: list, do_verbose=False):
+            if do_verbose:
+                verbose(f"In clear_private_prime. Input: {T=}")
             for i in range(len(I)):
                 for j in range(batch_start[I[i]], batch_stop[I[i]]):
                     if j == J[i]:
                         continue
                     T = self.curve.xmul_private(T, A24, j)  # private scalar mult
+            if do_verbose:
+                verbose(f"Output: {T=}")
             return T
 
         field = self.field
@@ -196,7 +203,7 @@ class CSIDH:
                     I.append(i)  # 将i插入I的尾部
             k = len(I)
             # Now I is in ascending order, eg. 0 1 2 3 4 5
-            # Optimize the order of I       
+            # Optimize the order of I
             assert k > 0
             tmp_I = I[-2::-1] + I[-1:]
             # Now tmp_I looks like 4 3 2 1 0 5
@@ -213,13 +220,13 @@ class CSIDH:
             J = [
                 batch_start[I[i]] for i in range(0, k)
             ]  # Ji将存储第Ii个batch中，本次准备做的那个
-            epsilon = []  
+            epsilon = []
             for i in range(0, k):
                 j = batch_start[I[i]]
                 eps_i = 0
                 # sign(a)==0, -1, 1, if a==0, <0, >0
                 eps_i = CMOV(eps_i, sign(e[j]), todo[j] != 0)
-                epsilon.append( eps_i ) 
+                epsilon.append(eps_i)
 
             for i in range(0, k):
                 for j in range(batch_start[I[i]], batch_stop[I[i]]):
@@ -229,32 +236,31 @@ class CSIDH:
                         break
                     # NOTE: these should be implemented in constant-time.
                     # eg. use masking technique to avoid break
-            
-            if debug:
-                print(f'I = {I}')
-                print(f'J = {J}\n')
+            verbose("\nCurrent atomic block (CTIDH inner loop):")
+            verbose(f"I = {I}")
+            verbose(f"J = {J}")
+            verbose(f"A = {A}\n")
             # "CTIDH inner loop"
             T0, T1 = self.curve.elligator(A)
+            verbose(f"elligator(A) Output:\n\t{T0=}\n\t{T1=}")
             for i in range(0, k):
-                if debug:
-                    print(f'Doing batch {I[i]}, index = {J[i]}, prime = {L[J[i]]}')
+                verbose(f"Doing batch {I[i]=}, index {J[i]=}, prime {L[J[i]]=}")
 
                 T0, T1 = CSWAP(T0, T1, epsilon[i] < 0)
                 if i == 0:
                     # T0 = [r]T0
-                    T0 = clear_public_prime(T0, A24, I)
-                    T0 = clear_private_prime(T0, A24, I, J)
-
+                    T0 = clear_public_prime(T0, A24, I, verbose_level >= 2)
+                    T0 = clear_private_prime(T0, A24, I, J, verbose_level >= 2)
                 P = deepcopy(T0)
                 # 清理掉当前以外的其他待做素数
-                for j in range(i+1, k):
+                for j in range(i + 1, k):
                     P = self.curve.xmul_private(P, A24, J[j])
+                verbose(f"After for loop of xmul_private:\n\t{P=}", level=2)
                 fi = PointAccept(P, I[i], J[i])
                 maskisogeny = (fi == 1) and (epsilon[i] != 0)
 
-                if debug:
-                    # print(f'Accept the point?: {fi}')
-                    print(f'Will do this isogeny? {maskisogeny}')
+                verbose(f"Accept the point? {fi=}", level=2)
+                verbose(f"Will do this isogeny? {maskisogeny=}", level=2)
 
                 if i == k - 2 and k > 2:  # 正在做倒数第二个batch
                     T0 = CMOV(T0, T1, (epsilon[i + 1] < 0) ^ (epsilon[i] < 0))
@@ -270,19 +276,21 @@ class CSIDH:
                     else:
                         Tnewlen = 2
                     if i == k - 2 and k > 2:  # 倒数第一个同源只需要推一个点
-                        Tnewlen = 1                    
+                        Tnewlen = 1
                     # NOTE: checked: matryoshka_isogeny does not modify the input T0 T1
                     Anew, Tnew = self.isogeny.matryoshka_isogeny(
                         A, Tnew, Tnewlen, P, J[i]
+                    )
+                    verbose(
+                        f"matryoshka_isogeny output:\n\t{Anew=}\n\t{Tnew=}", level=2
                     )
                     A = CMOV(A, Anew, maskisogeny)
                     A24 = self.curve.xA24(A)
                     T0 = CMOV(T0, Tnew[0], maskisogeny)
                     T1 = CMOV(T1, Tnew[1], maskisogeny)
-
-                if debug:
-                    a = A[0] * A[1] ** (-1)
-                    print(f'After that, a={a}')
+                    verbose(f"After 3 CMOVs:\n\t{A=}\n\t{T0=}\n\t{T1=}")
+                    if verbose_level >= 3:
+                        verbose(f"affine a={A[0] * A[1] ** (-1)}", level=3)
 
                 # 处理T0和T1：做完小同源之后清掉对应小素数，避免未来重复做
                 if i == 0:
@@ -295,20 +303,31 @@ class CSIDH:
                     T0 = self.curve.xmul_private(T0, A24, J[i])
                     T1 = deepcopy(T0)
                 elif i < k - 1:
-                    T0, T1 = CSWAP(T0, T1, epsilon[i] < 0) # T0, T1换回去
+                    T0, T1 = CSWAP(T0, T1, epsilon[i] < 0)  # T0, T1换回去
                     T0 = self.curve.xmul_private(T0, A24, J[i])
                     T1 = self.curve.xmul_private(T1, A24, J[i])
 
+                verbose(
+                    f"Before changing todo, batchtodo, batchtodosum:\n\t{T0=}\n\t{T1=}",
+                    level=2,
+                )
                 # NOTE: 实际中为了安全会用j扫一遍I[i]这个batch，右值改为 maskisogeny & (J[i] == j)
                 todo[J[i]] -= maskisogeny
                 batchtodo[I[i]] -= fi
                 batchtodosum -= fi
+                verbose(
+                    f"After batchtodosum -= fi:\t{todo[J[i]]=}, {batchtodo[I[i]]=}, {batchtodosum=}",
+                    level=2,
+                )
 
                 assert batchtodo[I[i]] >= 0
                 assert batchtodosum >= 0
 
         anew = A[0] * A[1] ** (-1)  # anew = Ax * Az^(-1)
         anew = anew.get_int_value()
+        verbose(f"Final result: {anew=}")
+        set_verbose(0)
+
         return anew
 
     def is_supersingular(self, pk: int) -> bool:
