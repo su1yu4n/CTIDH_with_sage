@@ -205,7 +205,7 @@ class TestCSIDH(unittest.TestCase):
                 test_one_batch(b)
 
     # NOTE: I have run it with num_sk = 50 and that took more than 2h
-    def test_group_action(self, num_sk=5, verbose_level=2):
+    def test_group_action(self, num_sk=5, verbose_level=0):
         def test_one_CSIDH_instance(csidh_instance, num_sk = num_sk, name='1024'):
             prime_info = csidh_instance.prime_info
             p = prime_info["p"]

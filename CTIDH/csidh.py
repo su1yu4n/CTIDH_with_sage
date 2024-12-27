@@ -196,11 +196,28 @@ class CSIDH:
             abs(e[i]) for i in range(0, n)
         ]  # NOTE: range(0, n) <=> for(i=0;i<n;i++)
 
+        # NOTE: new keyspace
+        batch_bound_max = max(batch_bound)
+        assert batch_bound[-2] + batch_bound[-3] == batch_bound_max
+        assert batch_bound[-4] + batch_bound[-5] == batch_bound_max
+        assert batch_bound[-1] == 0
+
         while batchtodosum > 0:
             I = []  # 存储当前没做完的batch
-            for i in range(0, batch_num):
+            for i in range(0, batch_num - 5):
                 if batchtodo[i] != 0:
                     I.append(i)  # 将i插入I的尾部
+            if batchtodo[-5] != 0:
+                I.append(batch_num - 5)
+            elif batchtodo[-4] != 0:
+                I.append(batch_num - 4)
+            if batchtodo[-3] != 0:
+                I.append(batch_num - 3)
+            elif batchtodo[-2] != 0:
+                I.append(batch_num - 2)
+            # NOTE: Currently, batchbound[-1] is always 0
+            # if batchtodo[-1] != 0:
+            #     I.append(batch_num - 1)
             k = len(I)
             # Now I is in ascending order, eg. 0 1 2 3 4 5
             # Optimize the order of I
@@ -216,7 +233,7 @@ class CSIDH:
             else:
                 I = tmp_I.copy()
             # Now I looks like 4 2 1 0 3 5
-            if k >= 4: # not carefully checked, but 2 0 1 3 -> 1 0 2 3
+            if k >= 4:  # not carefully checked, but 2 0 1 3 -> 1 0 2 3
                 I[0], I[-2] = I[-2], I[0]
             # 初始化 CTIDH inner loop的J和epsilon
             J = [
