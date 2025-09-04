@@ -1,6 +1,8 @@
 This is a PoC implementation of CTIDH-1024 and CTIDH-2048, with the original and our refined group action evaluation. 
 
-It is not meant for direct comparison with the original CTIDH implementation.
+It is not meant for direct comparison with the original CTIDH implementation. When integrated into the CTIDH, these minor refinements may only improve the performance by **2~4%**. 
+
+But **when allowing parallel, the refined version can be significantly faster than the original**. See remarks below. _Not interesting, but it can be useful._
 
 ## Dependencies
 
@@ -33,7 +35,7 @@ This implementation differs from original CTIDH in:
    - Processes only one final batch per inner loop (saves xEVALs for mentioned batches)
 3. **Redundant scalar multiplication eliminated:** Removes scalar multiplications of the unused point when inner loop has single batch
 
-**NOTE:**  Key spaces were manually adjusted from original CTIDH. Key space sizes (in bits):
+**NOTE:**  Key spaces were manually adjusted from original CTIDH, **with some decrease of the sizes**. Key space sizes (in bits):
 
 |      | `source-code-CTIDH` | `improved CTIDH` |
 | ---- | -------------- | ---------------- |
@@ -49,12 +51,12 @@ If we allow parallelization, our refinements would be more valuable:
    2. While all other algorithms (i.e. scalar mult, isogeny) are highly parallelizable (at least, in theory), Elligator, whose cost mainly originated from Legendre symbol computation is not. -->
 
 ## Some Further remarks
-1. Parallel Scalar Multiplication: Sampling points just once enables parallel computation of two random points' scalar multiplications - these are expensive.
+1. Parallel Scalar Multiplication: **Sampling points just once enables parallel computation of two random points' scalar multiplications** - these are expensive.
 2. Optimization Trade-offs Analysis:
 While random point sampling constitutes only ~5% of original CTIDH's group action cost (serial execution),
 and original CTIDH saves one xEVAL per extra isogeny. Our refinement remains valuable because: 
    - Parallel processing handles both xEVALs simultaneously, making single xEVAL savings less significant
-   - Other operations (such as scalar multiplication and isogeny computation) are (theoretically) highly parallelizable. Therefore Elligator's performance (dominated by Legendre symbol computation) remains serial-bound
+   - **Other operations (such as scalar multiplication and isogeny computation) are highly parallelizable (in theory)**. Therefore Elligator's performance (dominated by Legendre symbol computation) remains serial-bound
 
 ## License
 This repo is licensed under the GPL v3 (see LICENSE file).
